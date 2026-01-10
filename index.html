@@ -1,0 +1,1006 @@
+!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Network | Admin Edition</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: '#6366f1', // Indigo 500
+                        primaryDark: '#4f46e5',
+                        dark: '#0f172a',    // Slate 900
+                        card: '#1e293b',    // Slate 800
+                        input: '#334155',    // Slate 700
+                        danger: '#ef4444'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .slide-down { animation: slideDown 0.3s ease-out forwards; }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+        /* Hide number input arrows */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="bg-dark text-slate-200 font-sans h-screen overflow-hidden selection:bg-primary selection:text-white">
+
+    <!-- === AUTH OVERLAY === -->
+    <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-dark bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
+        <div class="glass-panel p-8 rounded-2xl shadow-2xl w-full max-w-md relative overflow-hidden fade-in border border-slate-700">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-purple-500"></div>
+            
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/20 text-primary mb-4">
+                    <i class="ph-fill ph-planet text-4xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-white tracking-tight">The Network</h1>
+                <p class="text-slate-400 text-sm mt-2">Secure. Private. Admin Controlled.</p>
+            </div>
+
+            <div id="login-form" class="space-y-4">
+                <input type="text" id="l-user" class="w-full bg-input border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-primary placeholder-slate-400" placeholder="Username">
+                <input type="password" id="l-pass" class="w-full bg-input border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-primary placeholder-slate-400" placeholder="Password">
+                <button onclick="Auth.login()" class="w-full bg-primary hover:bg-primaryDark text-white font-bold py-3 rounded-lg transition shadow-lg shadow-primary/25">Log In</button>
+                <div class="text-center text-sm text-slate-500 mt-4">
+                    New here? <span class="text-primary cursor-pointer hover:underline" onclick="UI.toggleAuth('signup')">Create Account</span>
+                </div>
+            </div>
+
+            <div id="signup-form" class="hidden space-y-4">
+                <input type="text" id="s-user" class="w-full bg-input border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-primary placeholder-slate-400" placeholder="Choose Username">
+                <input type="password" id="s-pass" class="w-full bg-input border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-primary placeholder-slate-400" placeholder="Create Password">
+                <button onclick="Auth.signup()" class="w-full bg-primary hover:bg-primaryDark text-white font-bold py-3 rounded-lg transition shadow-lg shadow-primary/25">Sign Up</button>
+                <div class="text-center text-sm text-slate-500 mt-4">
+                    <span class="text-primary cursor-pointer hover:underline" onclick="UI.toggleAuth('login')">Back to Login</span>
+                </div>
+            </div>
+            <div id="auth-error" class="hidden mt-4 p-3 bg-red-500/20 text-red-400 text-sm rounded text-center border border-red-500/30"></div>
+        </div>
+    </div>
+
+    <!-- === APP LAYOUT === -->
+    <div id="app" class="hidden h-screen grid grid-cols-[280px_1fr_300px] divide-x divide-slate-800">
+        
+        <!-- === LEFT SIDEBAR === -->
+        <nav class="bg-slate-900/50 flex flex-col p-4 overflow-y-auto">
+            <div class="flex items-center gap-3 px-2 mb-8">
+                <i class="ph-fill ph-planet text-3xl text-primary"></i>
+                <span class="font-bold text-xl text-white">The Network</span>
+            </div>
+
+            <div class="space-y-1">
+                <button onclick="UI.switchView('feed')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-slate-400 rounded-xl hover:bg-slate-800 hover:text-white transition bg-slate-800 text-white">
+                    <i class="ph ph-house text-xl"></i> <span class="font-medium">Home Feed</span>
+                </button>
+                <button onclick="UI.toggleSearch(true)" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-slate-400 rounded-xl hover:bg-slate-800 hover:text-white transition">
+                    <i class="ph ph-magnifying-glass text-xl"></i> <span class="font-medium">Search / Groups</span>
+                </button>
+                <button onclick="UI.switchView('messages')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-slate-400 rounded-xl hover:bg-slate-800 hover:text-white transition">
+                    <i class="ph ph-chats text-xl"></i> <span class="font-medium">Messages</span>
+                </button>
+            </div>
+
+            <!-- Admin Button (Hidden by default) -->
+            <button id="admin-btn" onclick="UI.switchView('admin')" class="hidden mt-4 w-full flex items-center gap-3 px-4 py-3 text-red-400 bg-red-900/10 border border-red-900/30 rounded-xl hover:bg-red-900/30 transition">
+                <i class="ph-fill ph-shield-warning text-xl"></i> <span class="font-bold">ADMIN PANEL</span>
+            </button>
+
+            <!-- Active Group Section -->
+            <div class="mt-8">
+                <div class="flex items-center justify-between px-2 mb-3">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Your Groups</h3>
+                    <button onclick="UI.toggleSearch(true)" class="text-slate-500 hover:text-primary"><i class="ph-bold ph-plus"></i></button>
+                </div>
+                <div id="my-groups-list" class="space-y-1">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <div class="mt-auto pt-4 border-t border-slate-800">
+                <div class="flex items-center gap-3 px-2">
+                    <div id="current-user-avatar" class="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center font-bold text-white shadow-lg">?</div>
+                    <div class="flex-1 min-w-0">
+                        <h4 id="current-user-name" class="font-bold text-sm text-white truncate">User</h4>
+                        <p class="text-xs text-slate-500 truncate">Online</p>
+                    </div>
+                    <button onclick="Auth.logout()" class="text-slate-400 hover:text-white"><i class="ph-bold ph-sign-out text-xl"></i></button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- === MAIN CONTENT === -->
+        <main class="relative bg-dark flex flex-col overflow-hidden">
+            
+            <!-- HEADER -->
+            <header class="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-dark/80 backdrop-blur z-10">
+                <h2 id="page-title" class="font-bold text-lg text-white">Home Feed</h2>
+                <div class="flex gap-2">
+                    <span class="text-xs font-mono text-emerald-500 bg-emerald-900/20 px-2 py-1 rounded border border-emerald-900/30">SECURE_CONN: ON</span>
+                </div>
+            </header>
+
+            <!-- FEED VIEW -->
+            <div id="view-feed" class="view-section flex-1 overflow-y-auto p-6 scroll-smooth">
+                <!-- Composer -->
+                <div class="glass-panel p-4 rounded-xl mb-6">
+                    <textarea id="post-content" rows="2" class="w-full bg-transparent border-none text-white placeholder-slate-500 focus:ring-0 resize-none text-lg" placeholder="What's happening?"></textarea>
+                    
+                    <!-- Media Input (Since no backend upload, use URL) -->
+                    <div id="media-input-container" class="hidden mt-2 mb-2">
+                        <input type="text" id="post-media-url" class="w-full bg-slate-900/50 border border-slate-700 rounded p-2 text-xs text-white" placeholder="Paste Image/Video URL here...">
+                    </div>
+
+                    <div class="flex justify-between items-center mt-3 pt-3 border-t border-slate-700">
+                        <div class="flex gap-2 text-primary">
+                            <button onclick="document.getElementById('media-input-container').classList.toggle('hidden')" class="p-2 hover:bg-slate-800 rounded-full transition" title="Add Image URL"><i class="ph ph-image"></i></button>
+                            <button class="p-2 hover:bg-slate-800 rounded-full transition"><i class="ph ph-smiley"></i></button>
+                        </div>
+                        <button onclick="App.createPost()" class="bg-primary hover:bg-primaryDark text-white px-6 py-2 rounded-full font-bold text-sm transition shadow-lg">Post</button>
+                    </div>
+                </div>
+
+                <!-- Feed Stream -->
+                <div id="feed-stream" class="space-y-4 pb-20">
+                    <!-- Posts go here -->
+                </div>
+            </div>
+
+            <!-- GROUP VIEW (DISCORD STYLE) -->
+            <div id="view-group" class="view-section hidden flex-1 flex h-full">
+                <!-- Channels Sidebar -->
+                <div class="w-48 bg-slate-900/30 border-r border-slate-800 flex flex-col">
+                    <div class="p-4 border-b border-slate-800">
+                        <h3 id="group-name-header" class="font-bold text-white truncate">Group Name</h3>
+                    </div>
+                    <div class="p-2 space-y-1 flex-1 overflow-y-auto" id="group-channels">
+                        <!-- Channels injected here -->
+                    </div>
+                    <div id="group-owner-controls" class="p-2 border-t border-slate-800 hidden">
+                        <button onclick="Group.createChannel()" class="w-full text-left px-2 py-1 text-xs text-primary hover:underline">+ Add Channel</button>
+                        <button onclick="Group.disband()" class="w-full text-left px-2 py-1 text-xs text-red-400 hover:underline">Disband Group</button>
+                    </div>
+                </div>
+                <!-- Chat Area -->
+                <div class="flex-1 flex flex-col bg-slate-900/20">
+                    <div class="h-12 border-b border-slate-800 flex items-center px-4">
+                        <span class="text-slate-400 mr-2">#</span>
+                        <span id="current-channel-name" class="font-bold text-white">general</span>
+                    </div>
+                    <div id="group-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3">
+                        <!-- Chat messages -->
+                    </div>
+                    <div class="p-4 bg-slate-900/40">
+                        <div class="flex gap-2 bg-slate-800 p-2 rounded-lg">
+                            <input type="text" id="group-chat-input" class="flex-1 bg-transparent border-none text-white focus:ring-0" placeholder="Message #channel">
+                            <button onclick="Group.sendMessage()" class="text-primary hover:text-white"><i class="ph-fill ph-paper-plane-right text-xl"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN PANEL VIEW -->
+            <div id="view-admin" class="view-section hidden flex-1 overflow-y-auto p-6 bg-red-950/10">
+                <h2 class="text-2xl font-bold text-red-400 mb-6 flex items-center gap-2"><i class="ph-fill ph-shield-warning"></i> ADMIN COMMAND CENTER</h2>
+                
+                <div class="grid grid-cols-2 gap-6 mb-8">
+                    <div class="glass-panel p-6 rounded-xl border-red-900/30">
+                        <h3 class="font-bold text-white mb-4">Content Control</h3>
+                        <button onclick="Admin.wipeMedia()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg mb-3 shadow-lg shadow-red-900/20">
+                            <i class="ph-bold ph-trash"></i> WIPE ALL MEDIA
+                        </button>
+                        <p class="text-xs text-slate-400">Irreversibly deletes all posts and images from the database.</p>
+                    </div>
+                    
+                    <div class="glass-panel p-6 rounded-xl border-red-900/30">
+                        <h3 class="font-bold text-white mb-4">User Oversight</h3>
+                        <div class="flex gap-2">
+                            <input type="text" id="admin-ban-target" class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm w-full text-white" placeholder="Username">
+                            <button onclick="Admin.banUser()" class="bg-red-500/20 text-red-400 border border-red-500/50 px-4 rounded hover:bg-red-500 hover:text-white transition">BAN</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-xl border-red-900/30 mb-8">
+                    <h3 class="font-bold text-white mb-4">Message Intercept (Spy Mode)</h3>
+                    <div class="flex gap-4 mb-4 border-b border-slate-700 pb-2">
+                        <button onclick="Admin.loadSpy('groups')" class="text-sm font-bold text-white hover:text-red-400">Group Chats</button>
+                        <button onclick="Admin.loadSpy('dms')" class="text-sm font-bold text-slate-400 hover:text-red-400">Private DMs</button>
+                    </div>
+                    <div id="admin-spy-window" class="h-64 overflow-y-auto bg-black/50 rounded p-4 font-mono text-sm text-green-400">
+                        <!-- Spy logs -->
+                        <p class="opacity-50">// Select a category to intercept messages...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- MESSAGES VIEW (DMs) -->
+            <div id="view-messages" class="view-section hidden flex-1 flex flex-col p-6">
+                 <h2 class="text-xl font-bold text-white mb-4">Private Messages</h2>
+                 <div id="dm-list" class="space-y-2">
+                    <div class="text-slate-500 text-sm">No recent messages. Use search to find people!</div>
+                 </div>
+            </div>
+
+            <!-- SEARCH / SLIDE DOWN PANEL -->
+            <div id="search-panel" class="absolute top-0 left-0 w-full h-full bg-slate-900/95 backdrop-blur-xl z-20 transform -translate-y-full transition-transform duration-300 flex flex-col">
+                <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-white">Discovery</h2>
+                    <button onclick="UI.toggleSearch(false)" class="p-2 bg-slate-800 rounded-full hover:bg-slate-700 text-white"><i class="ph-bold ph-x"></i></button>
+                </div>
+                
+                <div class="p-6 flex-1 overflow-y-auto space-y-8">
+                    <!-- Search User -->
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-500 uppercase mb-3">Find Users</h3>
+                        <div class="relative">
+                            <input type="text" id="user-search-input" oninput="App.searchUsers(this.value)" class="w-full bg-slate-800 border-none rounded-xl p-4 pl-12 text-white text-lg focus:ring-2 focus:ring-primary" placeholder="Search by username...">
+                            <i class="ph-bold ph-magnifying-glass absolute left-4 top-4 text-slate-500 text-xl"></i>
+                        </div>
+                        <div id="user-search-results" class="mt-4 grid grid-cols-1 gap-2"></div>
+                    </div>
+
+                    <!-- Join Group -->
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-500 uppercase mb-3">Join Private Group</h3>
+                        <div class="flex gap-2">
+                            <input type="text" id="join-code-input" class="flex-1 bg-slate-800 border-none rounded-xl p-4 text-white font-mono tracking-widest text-center uppercase" placeholder="ENTER CODE">
+                            <button onclick="Group.joinByCode()" class="bg-primary hover:bg-primaryDark text-white font-bold px-8 rounded-xl transition">JOIN</button>
+                        </div>
+                    </div>
+
+                    <!-- Public Groups Slider -->
+                    <div>
+                        <div class="flex justify-between items-end mb-3">
+                            <h3 class="text-sm font-bold text-slate-500 uppercase">Public Groups</h3>
+                            <button onclick="Group.createModal()" class="text-primary text-sm font-bold hover:underline">+ Create Group</button>
+                        </div>
+                        <div class="flex gap-4 overflow-x-auto pb-4 snap-x" id="public-groups-slider">
+                            <!-- Horizontal scroll items -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- === RIGHT SIDEBAR === -->
+        <aside class="bg-slate-900/30 p-6 flex flex-col gap-6 border-l border-slate-800">
+            <!-- Profile Card -->
+            <div class="glass-panel p-6 rounded-2xl text-center">
+                <div class="relative inline-block">
+                    <div id="profile-avatar-lg" class="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl mb-4 border-4 border-card">
+                        ?
+                    </div>
+                    <div class="absolute bottom-4 right-0 w-5 h-5 bg-green-500 border-4 border-card rounded-full" title="Online"></div>
+                </div>
+                <h2 id="profile-name" class="text-xl font-bold text-white">User</h2>
+                <div class="flex justify-center gap-6 mt-4 pb-4 border-b border-slate-700/50">
+                    <div class="text-center">
+                        <span id="stat-posts" class="block text-white font-bold text-lg">0</span>
+                        <span class="text-xs text-slate-500 uppercase font-semibold">Posts</span>
+                    </div>
+                    <div class="text-center">
+                        <span id="stat-followers" class="block text-white font-bold text-lg">0</span>
+                        <span class="text-xs text-slate-500 uppercase font-semibold">Followers</span>
+                    </div>
+                </div>
+                <div class="mt-4 text-xs text-slate-500">
+                    ID: <span id="profile-id" class="font-mono">---</span>
+                </div>
+            </div>
+
+            <!-- Vault Info -->
+            <div class="glass-panel p-4 rounded-xl">
+                <h3 class="font-bold text-slate-300 text-sm mb-2 flex items-center gap-2"><i class="ph-fill ph-lock-key text-primary"></i> Encrypted Vault</h3>
+                <div class="bg-black/40 rounded p-3">
+                    <p class="text-xs text-slate-400 font-mono">STATUS: <span class="text-emerald-500">SECURE</span></p>
+                    <p class="text-xs text-slate-400 font-mono mt-1">SESSION: <span class="text-blue-400">ACTIVE</span></p>
+                </div>
+            </div>
+            
+            <!-- Bird Facts / Community -->
+            <div class="mt-auto">
+                <div class="glass-panel p-4 rounded-xl bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border-none">
+                    <h4 class="font-bold text-indigo-300 text-sm mb-1"><i class="ph-fill ph-bird"></i> Did you know?</h4>
+                    <p class="text-xs text-indigo-200/70 italic">Admin can wipe everything. Be nice.</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        // --- DATABASE MOCK (LOCAL STORAGE WRAPPER) ---
+        const DB = {
+            init: () => {
+                if(!localStorage.getItem('net_v3_users')) localStorage.setItem('net_v3_users', JSON.stringify([]));
+                if(!localStorage.getItem('net_v3_posts')) localStorage.setItem('net_v3_posts', JSON.stringify([]));
+                if(!localStorage.getItem('net_v3_groups')) localStorage.setItem('net_v3_groups', JSON.stringify([]));
+                if(!localStorage.getItem('net_v3_banned')) localStorage.setItem('net_v3_banned', JSON.stringify([]));
+            },
+            getUsers: () => JSON.parse(localStorage.getItem('net_v3_users')),
+            saveUsers: (d) => localStorage.setItem('net_v3_users', JSON.stringify(d)),
+            getPosts: () => JSON.parse(localStorage.getItem('net_v3_posts')),
+            savePosts: (d) => localStorage.setItem('net_v3_posts', JSON.stringify(d)),
+            getGroups: () => JSON.parse(localStorage.getItem('net_v3_groups')),
+            saveGroups: (d) => localStorage.setItem('net_v3_groups', JSON.stringify(d)),
+            getBanned: () => JSON.parse(localStorage.getItem('net_v3_banned')),
+            banUser: (u) => {
+                let b = DB.getBanned();
+                b.push(u);
+                localStorage.setItem('net_v3_banned', JSON.stringify(b));
+            },
+            wipeMedia: () => localStorage.setItem('net_v3_posts', JSON.stringify([])),
+        };
+
+        // --- AUTH SYSTEM ---
+        const Auth = {
+            currentUser: null,
+            
+            login: () => {
+                const u = document.getElementById('l-user').value.trim();
+                const p = document.getElementById('l-pass').value.trim();
+                
+                // Check Ban
+                if(DB.getBanned().includes(u)) return UI.showAuthError("ACCOUNT PERMANENTLY BANNED");
+
+                // SPECIAL ADMIN LOGIN
+                if(u === 'admin' && p === 'ilovetoeatagiggidy') {
+                    let users = DB.getUsers();
+                    let adminUser = users.find(x => x.username === 'admin');
+                    
+                    if(!adminUser) {
+                        adminUser = {
+                            id: 'root_admin',
+                            username: 'admin',
+                            password: 'encrypted_admin',
+                            followers: 999999,
+                            following: [],
+                            likedPosts: [], 
+                            joinedGroups: [],
+                            lastActive: Date.now()
+                        };
+                        users.push(adminUser);
+                        DB.saveUsers(users);
+                    }
+                    
+                    Auth.currentUser = adminUser;
+                    localStorage.setItem('net_v3_session', JSON.stringify(adminUser));
+                    UI.hideAuth();
+                    App.init();
+                    return;
+                }
+
+                const users = DB.getUsers();
+                const user = users.find(x => x.username === u && x.password === p);
+
+                if(user) {
+                    // Simulate "One Session" check
+                    const now = Date.now();
+                    if(user.lastActive && (now - user.lastActive) < 5000) { 
+                        // Just a warning in console for now
+                        console.log("Session overlap detected");
+                    }
+
+                    // Update Active Time
+                    user.lastActive = now;
+                    DB.saveUsers(users);
+                    
+                    Auth.currentUser = user;
+                    localStorage.setItem('net_v3_session', JSON.stringify(user));
+                    
+                    UI.hideAuth();
+                    App.init();
+                } else {
+                    UI.showAuthError("Invalid Credentials");
+                }
+            },
+
+            signup: () => {
+                const u = document.getElementById('s-user').value.trim();
+                const p = document.getElementById('s-pass').value.trim();
+                if(!u || !p) return UI.showAuthError("Fields cannot be empty");
+                
+                if(u.toLowerCase() === 'admin') return UI.showAuthError("Reserved Username");
+
+                const users = DB.getUsers();
+                if(users.find(x => x.username === u)) return UI.showAuthError("Username taken");
+
+                const newUser = {
+                    id: 'u_' + Date.now(),
+                    username: u,
+                    password: p,
+                    followers: 0,
+                    following: [],
+                    likedPosts: [],
+                    joinedGroups: [],
+                    lastActive: Date.now()
+                };
+
+                users.push(newUser);
+                DB.saveUsers(users);
+                
+                // Auto login
+                Auth.currentUser = newUser;
+                localStorage.setItem('net_v3_session', JSON.stringify(newUser));
+                UI.hideAuth();
+                App.init();
+            },
+
+            logout: () => {
+                localStorage.removeItem('net_v3_session');
+                location.reload();
+            },
+
+            checkSession: () => {
+                const session = JSON.parse(localStorage.getItem('net_v3_session'));
+                if(session) {
+                    // Re-verify against DB to check bans or password changes
+                    const freshUser = DB.getUsers().find(u => u.username === session.username);
+                    if(freshUser && !DB.getBanned().includes(freshUser.username)) {
+                        Auth.currentUser = freshUser;
+                        UI.hideAuth();
+                        App.init();
+                    } else {
+                        localStorage.removeItem('net_v3_session');
+                    }
+                }
+            }
+        };
+
+        // --- MAIN APPLICATION LOGIC ---
+        const App = {
+            init: () => {
+                UI.updateProfile();
+                UI.renderFeed();
+                Group.renderMyGroups();
+                Group.renderPublicSlider();
+
+                // Admin Check
+                if(Auth.currentUser.username === 'admin') {
+                    document.getElementById('admin-btn').classList.remove('hidden');
+                }
+                
+                // Session Heartbeat
+                setInterval(() => {
+                    if(Auth.currentUser) {
+                        const users = DB.getUsers();
+                        const me = users.find(u => u.username === Auth.currentUser.username);
+                        if(me) {
+                            me.lastActive = Date.now();
+                            DB.saveUsers(users);
+                        }
+                    }
+                }, 5000);
+            },
+
+            createPost: () => {
+                const txt = document.getElementById('post-content').value;
+                const media = document.getElementById('post-media-url').value;
+                
+                if(!txt && !media) return;
+
+                const newPost = {
+                    id: 'p_' + Date.now(),
+                    author: Auth.currentUser.username,
+                    content: txt,
+                    media: media, // URL
+                    likes: 0,
+                    timestamp: Date.now()
+                };
+
+                const posts = DB.getPosts();
+                posts.unshift(newPost); // Add to top
+                DB.savePosts(posts);
+
+                // Update UI stats
+                document.getElementById('post-content').value = '';
+                document.getElementById('post-media-url').value = '';
+                document.getElementById('media-input-container').classList.add('hidden');
+                
+                UI.renderFeed();
+                UI.updateProfile();
+            },
+
+            toggleLike: (postId, btn) => {
+                const users = DB.getUsers();
+                const posts = DB.getPosts();
+                
+                const me = users.find(u => u.username === Auth.currentUser.username);
+                const post = posts.find(p => p.id === postId);
+
+                if(!me || !post) return;
+
+                if(me.likedPosts.includes(postId)) {
+                    alert("You already liked this post.");
+                    return; 
+                }
+
+                // Add Like
+                post.likes++;
+                me.likedPosts.push(postId);
+                
+                // Save
+                DB.saveUsers(users);
+                DB.savePosts(posts);
+                
+                // Update Local User ref
+                Auth.currentUser = me;
+                
+                // Update UI
+                btn.innerHTML = `<i class="ph-fill ph-heart text-pink-500"></i> ${post.likes}`;
+                btn.classList.add('text-pink-500');
+            },
+
+            followUser: (targetUsername, btn) => {
+                if(targetUsername === Auth.currentUser.username) return;
+
+                const users = DB.getUsers();
+                const me = users.find(u => u.username === Auth.currentUser.username);
+                const target = users.find(u => u.username === targetUsername);
+
+                if(me.following.includes(targetUsername)) {
+                    return;
+                }
+
+                me.following.push(targetUsername);
+                target.followers++;
+
+                DB.saveUsers(users);
+                Auth.currentUser = me;
+                
+                btn.innerText = "Following";
+                btn.classList.add('bg-slate-700', 'text-slate-400');
+                btn.classList.remove('bg-primary', 'text-white');
+                UI.updateProfile();
+            },
+
+            searchUsers: (query) => {
+                const res = document.getElementById('user-search-results');
+                res.innerHTML = '';
+                if(!query) return;
+
+                const users = DB.getUsers().filter(u => u.username.toLowerCase().includes(query.toLowerCase()));
+                
+                users.forEach(u => {
+                    res.innerHTML += `
+                        <div class="flex items-center justify-between bg-slate-800 p-3 rounded-xl">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center font-bold">${u.username[0]}</div>
+                                <span class="font-bold text-white">${u.username}</span>
+                            </div>
+                            <button onclick="App.followUser('${u.username}', this)" class="text-xs font-bold bg-primary px-3 py-1 rounded-full hover:bg-white hover:text-primary transition">Follow</button>
+                        </div>
+                    `;
+                });
+            }
+        };
+
+        // --- GROUP & CHAT SYSTEM ---
+        const Group = {
+            currentGroup: null,
+            currentChannel: null,
+
+            createModal: () => {
+                const name = prompt("Enter Group Name:");
+                const isPrivate = confirm("Make it Private? (Requires Code)");
+                if(!name) return;
+
+                const code = isPrivate ? Math.floor(100000 + Math.random() * 900000).toString() : null;
+
+                const newGroup = {
+                    id: 'g_' + Date.now(),
+                    name: name,
+                    owner: Auth.currentUser.username,
+                    isPrivate: isPrivate,
+                    code: code,
+                    members: [Auth.currentUser.username],
+                    channels: [
+                        { name: 'general', messages: [] },
+                        { name: 'announcements', messages: [] }
+                    ]
+                };
+
+                const groups = DB.getGroups();
+                groups.push(newGroup);
+                DB.saveGroups(groups);
+
+                // Add to user's joined list
+                const users = DB.getUsers();
+                const me = users.find(u => u.username === Auth.currentUser.username);
+                me.joinedGroups.push(newGroup.id);
+                DB.saveUsers(users);
+                Auth.currentUser = me;
+
+                Group.renderMyGroups();
+                Group.renderPublicSlider();
+                
+                if(code) alert(`Group Created! Access Code: ${code}`);
+            },
+
+            joinByCode: () => {
+                const code = document.getElementById('join-code-input').value.trim();
+                const groups = DB.getGroups();
+                const group = groups.find(g => g.code === code);
+
+                if(group) {
+                    Group.join(group.id);
+                } else {
+                    alert("Invalid Code");
+                }
+            },
+
+            join: (groupId) => {
+                const groups = DB.getGroups();
+                const group = groups.find(g => g.id === groupId);
+                
+                // Check if already member
+                if(group.members.includes(Auth.currentUser.username)) {
+                    alert("Already a member!");
+                    return;
+                }
+
+                group.members.push(Auth.currentUser.username);
+                DB.saveGroups(groups);
+
+                const users = DB.getUsers();
+                const me = users.find(u => u.username === Auth.currentUser.username);
+                me.joinedGroups.push(groupId);
+                DB.saveUsers(users);
+                Auth.currentUser = me;
+
+                alert(`Joined ${group.name}!`);
+                Group.renderMyGroups();
+            },
+
+            open: (groupId) => {
+                const groups = DB.getGroups();
+                const group = groups.find(g => g.id === groupId);
+                Group.currentGroup = group;
+                Group.currentChannel = group.channels[0]; // Default to first channel
+
+                // Setup UI
+                document.getElementById('group-name-header').innerText = group.name;
+                document.getElementById('group-owner-controls').classList.toggle('hidden', group.owner !== Auth.currentUser.username);
+                
+                Group.renderChannels();
+                Group.renderMessages();
+                
+                UI.switchView('group');
+            },
+
+            renderChannels: () => {
+                const list = document.getElementById('group-channels');
+                list.innerHTML = '';
+                Group.currentGroup.channels.forEach((ch, idx) => {
+                    const active = Group.currentChannel.name === ch.name ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50';
+                    list.innerHTML += `
+                        <div onclick="Group.switchChannel(${idx})" class="cursor-pointer px-3 py-2 rounded mb-1 flex items-center gap-2 ${active}">
+                            <i class="ph-bold ph-hash"></i> <span class="truncate">${ch.name}</span>
+                        </div>
+                    `;
+                });
+            },
+
+            switchChannel: (idx) => {
+                Group.currentChannel = Group.currentGroup.channels[idx];
+                Group.renderChannels(); // Update active state
+                Group.renderMessages();
+            },
+
+            createChannel: () => {
+                const name = prompt("Channel Name (no spaces):");
+                if(!name) return;
+                
+                const groups = DB.getGroups();
+                const g = groups.find(x => x.id === Group.currentGroup.id);
+                g.channels.push({ name: name.replace(/\s/g, '-').toLowerCase(), messages: [] });
+                
+                DB.saveGroups(groups);
+                Group.currentGroup = g;
+                Group.renderChannels();
+            },
+
+            disband: () => {
+                if(!confirm("Are you sure? This cannot be undone.")) return;
+                
+                let groups = DB.getGroups();
+                groups = groups.filter(g => g.id !== Group.currentGroup.id);
+                DB.saveGroups(groups);
+                
+                alert("Group Disbanded.");
+                UI.switchView('feed');
+                Group.renderMyGroups();
+            },
+
+            sendMessage: () => {
+                const inp = document.getElementById('group-chat-input');
+                const txt = inp.value.trim();
+                if(!txt) return;
+
+                const msg = {
+                    user: Auth.currentUser.username,
+                    text: txt,
+                    time: Date.now()
+                };
+
+                // Save to DB
+                const groups = DB.getGroups();
+                const g = groups.find(x => x.id === Group.currentGroup.id);
+                const ch = g.channels.find(c => c.name === Group.currentChannel.name);
+                ch.messages.push(msg);
+                
+                DB.saveGroups(groups);
+                Group.currentGroup = g; // Update local ref
+                Group.currentChannel = ch;
+
+                inp.value = '';
+                Group.renderMessages();
+            },
+
+            renderMessages: () => {
+                document.getElementById('current-channel-name').innerText = Group.currentChannel.name;
+                const container = document.getElementById('group-chat-messages');
+                container.innerHTML = '';
+
+                Group.currentChannel.messages.forEach(m => {
+                    const isMe = m.user === Auth.currentUser.username;
+                    container.innerHTML += `
+                        <div class="flex gap-3 mb-2 hover:bg-slate-800/30 p-2 rounded -mx-2">
+                            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-xs shrink-0">${m.user[0]}</div>
+                            <div class="min-w-0">
+                                <div class="flex items-baseline gap-2">
+                                    <span class="font-bold text-sm ${isMe ? 'text-primary' : 'text-white'}">${m.user}</span>
+                                    <span class="text-[10px] text-slate-500">${new Date(m.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                </div>
+                                <p class="text-slate-300 text-sm break-words">${m.text}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.scrollTop = container.scrollHeight;
+            },
+
+            renderMyGroups: () => {
+                const list = document.getElementById('my-groups-list');
+                list.innerHTML = '';
+                
+                const allGroups = DB.getGroups();
+                const myGroups = allGroups.filter(g => g.members.includes(Auth.currentUser.username));
+
+                myGroups.forEach(g => {
+                    list.innerHTML += `
+                        <button onclick="Group.open('${g.id}')" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-400 rounded-lg hover:bg-slate-800 hover:text-white transition">
+                            <span class="w-2 h-2 rounded-full bg-slate-600"></span> ${g.name}
+                        </button>
+                    `;
+                });
+            },
+
+            renderPublicSlider: () => {
+                const slider = document.getElementById('public-groups-slider');
+                slider.innerHTML = '';
+                
+                const allGroups = DB.getGroups();
+                const publicGroups = allGroups.filter(g => !g.isPrivate);
+
+                publicGroups.forEach(g => {
+                    slider.innerHTML += `
+                        <div class="snap-start shrink-0 w-64 h-32 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-4 border border-slate-700 flex flex-col justify-between hover:border-primary transition group cursor-pointer" onclick="Group.join('${g.id}')">
+                            <div>
+                                <h4 class="font-bold text-white group-hover:text-primary transition">${g.name}</h4>
+                                <p class="text-xs text-slate-500">${g.members.length} members</p>
+                            </div>
+                            <button class="self-end text-xs font-bold bg-slate-700 text-white px-3 py-1 rounded-full group-hover:bg-primary transition">Join Group</button>
+                        </div>
+                    `;
+                });
+            }
+        };
+
+        // --- ADMIN SYSTEM ---
+        const Admin = {
+            wipeMedia: () => {
+                if(!confirm("WARNING: This will delete ALL posts and images globally. Proceed?")) return;
+                DB.wipeMedia();
+                alert("Database purged.");
+                UI.renderFeed();
+            },
+            
+            banUser: () => {
+                const target = document.getElementById('admin-ban-target').value;
+                if(!target) return;
+                if(target === 'admin') return alert("Cannot ban root admin.");
+                
+                DB.banUser(target);
+                alert(`User ${target} has been banned.`);
+                
+                // Remove their posts
+                let posts = DB.getPosts();
+                posts = posts.filter(p => p.author !== target);
+                DB.savePosts(posts);
+                UI.renderFeed();
+            },
+
+            loadSpy: (type) => {
+                const win = document.getElementById('admin-spy-window');
+                win.innerHTML = '';
+                
+                if(type === 'groups') {
+                    const groups = DB.getGroups();
+                    groups.forEach(g => {
+                        win.innerHTML += `<div class="mb-4 border-b border-green-900/50 pb-2"><span class="text-white font-bold">[${g.name}]</span><br>`;
+                        g.channels.forEach(c => {
+                            c.messages.forEach(m => {
+                                win.innerHTML += `<span class="text-xs opacity-70">${m.user}:</span> ${m.text}<br>`;
+                            });
+                        });
+                        win.innerHTML += `</div>`;
+                    });
+                } else {
+                    win.innerHTML = `<span class="text-red-400">Scanning private packets... No active P2P tunnels found in local simulation.</span>`;
+                }
+            },
+
+            deletePost: (id) => {
+                if(!confirm("Admin Delete: Remove this post?")) return;
+                let posts = DB.getPosts();
+                posts = posts.filter(p => p.id !== id);
+                DB.savePosts(posts);
+                UI.renderFeed();
+            }
+        };
+
+        // --- UI MANAGER ---
+        const UI = {
+            showAuthError: (msg) => {
+                const el = document.getElementById('auth-error');
+                el.innerText = msg;
+                el.classList.remove('hidden');
+            },
+            
+            hideAuth: () => {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                document.getElementById('app').classList.add('grid');
+            },
+            
+            toggleAuth: (mode) => {
+                document.getElementById('auth-error').classList.add('hidden');
+                if(mode === 'signup') {
+                    document.getElementById('login-form').classList.add('hidden');
+                    document.getElementById('signup-form').classList.remove('hidden');
+                } else {
+                    document.getElementById('login-form').classList.remove('hidden');
+                    document.getElementById('signup-form').classList.add('hidden');
+                }
+            },
+
+            updateProfile: () => {
+                const u = Auth.currentUser;
+                const users = DB.getUsers();
+                const freshUser = users.find(x => x.username === u.username);
+                const posts = DB.getPosts().filter(p => p.author === u.username);
+
+                document.getElementById('profile-name').innerText = freshUser.username;
+                document.getElementById('profile-id').innerText = freshUser.id;
+                document.getElementById('profile-avatar-lg').innerText = freshUser.username[0].toUpperCase();
+                document.getElementById('current-user-avatar').innerText = freshUser.username[0].toUpperCase();
+                document.getElementById('current-user-name').innerText = freshUser.username;
+                
+                document.getElementById('stat-followers').innerText = freshUser.followers;
+                document.getElementById('stat-posts').innerText = posts.length;
+            },
+
+            renderFeed: () => {
+                const container = document.getElementById('feed-stream');
+                container.innerHTML = '';
+                const posts = DB.getPosts();
+
+                if(posts.length === 0) {
+                    container.innerHTML = `<div class="text-center text-slate-500 mt-10">No posts yet. Be the first!</div>`;
+                    return;
+                }
+
+                posts.forEach(post => {
+                    let mediaHtml = '';
+                    if(post.media) {
+                        mediaHtml = `<img src="${post.media}" class="w-full rounded-lg mt-3 border border-slate-700" onerror="this.style.display='none'">`;
+                    }
+
+                    const isAdmin = Auth.currentUser.username === 'admin';
+                    const deleteBtn = isAdmin ? `<button onclick="Admin.deletePost('${post.id}')" class="text-red-500 text-xs font-bold hover:underline ml-2">DELETE</button>` : '';
+
+                    container.innerHTML += `
+                        <div class="glass-panel p-4 rounded-xl fade-in">
+                            <div class="flex gap-3">
+                                <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white shrink-0">
+                                    ${post.author[0].toUpperCase()}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <span class="font-bold text-white cursor-pointer hover:underline">@${post.author}</span>
+                                            <span class="text-xs text-slate-500 ml-2">${new Date(post.timestamp).toLocaleTimeString()}</span>
+                                            ${deleteBtn}
+                                        </div>
+                                    </div>
+                                    <p class="text-slate-200 mt-1 leading-relaxed break-words">${post.content}</p>
+                                    ${mediaHtml}
+                                    <div class="flex gap-6 mt-3 text-slate-400 text-sm">
+                                        <button class="flex items-center gap-1 hover:text-pink-500 transition group" onclick="App.toggleLike('${post.id}', this)">
+                                            <i class="ph-bold ph-heart group-hover:scale-110 transition ${Auth.currentUser.likedPosts.includes(post.id) ? 'text-pink-500' : ''}"></i> 
+                                            ${Auth.currentUser.likedPosts.includes(post.id) ? post.likes : (post.likes || 0)}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            },
+
+            switchView: (viewName) => {
+                // Hide all
+                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+                
+                // Show specific
+                document.getElementById(`view-${viewName}`).classList.remove('hidden');
+
+                // Update Header
+                const titles = { 'feed': 'Home Feed', 'admin': 'Admin Control', 'messages': 'Private Messages', 'group': 'Group Chat' };
+                document.getElementById('page-title').innerText = titles[viewName] || 'The Network';
+            },
+
+            toggleSearch: (show) => {
+                const panel = document.getElementById('search-panel');
+                if(show) {
+                    panel.classList.remove('-translate-y-full');
+                } else {
+                    panel.classList.add('-translate-y-full');
+                }
+            }
+        };
+
+        // --- INIT ---
+        DB.init();
+        Auth.checkSession();
+        
+        // Prevent refresh wiping session data but allowing logout
+        window.addEventListener('beforeunload', () => {
+            // In a real app we might sync here
+        });
+
+    </script>
+</body>
+</html>
