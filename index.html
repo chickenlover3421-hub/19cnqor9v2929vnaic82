@@ -9,202 +9,258 @@
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    fontFamily: { 
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
                     colors: {
-                        primary: '#6366f1', // Indigo 500
+                        primary: '#6366f1', 
                         primaryDark: '#4f46e5',
-                        dark: '#0f172a',    // Slate 900
-                        card: '#1e293b',    // Slate 800
-                        input: '#334155',    // Slate 700
-                        danger: '#ef4444'
+                        dark: '#0f172a',    
+                        card: '#1e293b',    
+                        input: '#334155',    
+                        danger: '#ef4444',
+                        success: '#22c55e'
                     }
                 }
             }
         }
     </script>
     <style>
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
         
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); }
-        .nav-btn.active { color: #6366f1; background: rgba(99, 102, 241, 0.1); }
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; scroll-behavior: smooth; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); }
+        .nav-btn.active { color: #6366f1; background: rgba(99, 102, 241, 0.1); border-right: 3px solid #6366f1; }
         
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slide { animation: slideUp 0.4s ease-out forwards; }
+        
+        .notification-toast {
+            animation: slideInRight 0.3s ease-out forwards;
+        }
+        @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
-        #chat-sidebar { width: 300px; border-right: 1px solid rgba(255,255,255,0.1); }
+        /* Fancy Grid Background for Admin */
+        .admin-grid {
+            background-image: radial-gradient(circle at 2px 2px, rgba(239, 68, 68, 0.05) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
     </style>
 </head>
 <body class="overflow-x-hidden">
 
+    <!-- --- NOTIFICATION SYSTEM --- -->
+    <div id="notification-container" class="fixed top-6 right-6 z-[200] flex flex-col gap-3 w-80"></div>
+
     <!-- --- AUTH SCREEN --- -->
     <div id="auth-screen" class="fixed inset-0 z-[100] bg-dark flex items-center justify-center p-4">
-        <div class="w-full max-w-md animate-fade">
+        <div class="w-full max-w-md animate-slide">
             <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-primary/20 text-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <i class="ph-fill ph-circles-three-plus text-4xl"></i>
+                <div class="w-20 h-20 bg-primary/10 text-primary rounded-3xl flex items-center justify-center mx-auto mb-6 border border-primary/20 shadow-2xl shadow-primary/10">
+                    <i class="ph-fill ph-shield-star text-5xl"></i>
                 </div>
-                <h1 class="text-3xl font-bold tracking-tight">The Network</h1>
-                <p class="text-slate-400 mt-2" id="auth-desc">Welcome back, join the grid.</p>
+                <h1 class="text-4xl font-black tracking-tighter mb-2 italic">THE NETWORK</h1>
+                <p class="text-slate-500 font-medium" id="auth-desc">Secure Decentralized Access Point</p>
             </div>
 
-            <div class="bg-card p-8 rounded-3xl border border-slate-700 shadow-2xl">
-                <div id="auth-error" class="hidden mb-4 p-3 bg-danger/10 border border-danger/20 text-danger text-sm rounded-xl text-center"></div>
-                <div id="auth-success" class="hidden mb-4 p-3 bg-green-500/10 border border-green-500/20 text-green-500 text-sm rounded-xl text-center"></div>
+            <div class="bg-card p-10 rounded-[2.5rem] border border-slate-700/50 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
                 
-                <form id="auth-form" onsubmit="event.preventDefault(); Auth.handleSubmit();" class="space-y-4">
+                <form id="auth-form" onsubmit="event.preventDefault(); Auth.handleSubmit();" class="space-y-5">
+                    <div id="auth-error" class="hidden p-4 bg-danger/10 border border-danger/20 text-danger text-xs font-bold rounded-2xl text-center uppercase tracking-widest"></div>
+                    
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 ml-1">Username</label>
-                        <input type="text" id="auth-username" required class="w-full bg-slate-900 border-none rounded-xl p-3 focus:ring-2 focus:ring-primary transition text-white" placeholder="Enter username">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 ml-1">Grid Identity</label>
+                        <input type="text" id="auth-username" required class="w-full bg-slate-900 border border-slate-700/50 rounded-2xl p-4 focus:ring-2 focus:ring-primary outline-none transition text-white placeholder-slate-600" placeholder="Username">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 ml-1">Password</label>
-                        <input type="password" id="auth-password" required class="w-full bg-slate-900 border-none rounded-xl p-3 focus:ring-2 focus:ring-primary transition text-white" placeholder="••••••••">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 ml-1">Access Cipher</label>
+                        <input type="password" id="auth-password" required class="w-full bg-slate-900 border border-slate-700/50 rounded-2xl p-4 focus:ring-2 focus:ring-primary outline-none transition text-white placeholder-slate-600" placeholder="••••••••">
                     </div>
-                    <button type="submit" id="auth-btn" class="w-full bg-primary hover:bg-primaryDark text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95">
-                        Log In
+                    <button type="submit" id="auth-btn" class="w-full bg-primary hover:bg-primaryDark text-white font-black py-4 rounded-2xl shadow-xl shadow-primary/20 transition transform active:scale-[0.98] uppercase tracking-widest">
+                        Initialize Session
                     </button>
                 </form>
 
-                <div class="mt-6 text-center">
-                    <button onclick="Auth.toggleMode()" id="auth-toggle" class="text-sm text-slate-400 hover:text-primary transition">
-                        Don't have an account? <span class="text-primary font-bold">Sign Up</span>
+                <div class="mt-8 pt-6 border-t border-slate-800 flex flex-col items-center gap-4">
+                    <button onclick="Auth.toggleMode()" id="auth-toggle" class="text-xs text-slate-500 hover:text-white transition font-bold uppercase tracking-widest">
+                        Need Access? <span class="text-primary">Register Node</span>
+                    </button>
+                    <button onclick="Auth.recoverAdmin()" class="text-[9px] text-slate-600 hover:text-danger font-black uppercase tracking-[0.3em] transition">
+                        System Recovery Protocol
                     </button>
                 </div>
             </div>
+            <p class="text-center mt-8 text-[10px] text-slate-600 font-mono">v4.0.2 // ENCRYPTED NODE 77-B</p>
         </div>
     </div>
 
     <!-- --- APP LAYOUT --- -->
-    <div id="app-screen" class="hidden min-h-screen flex">
+    <div id="app-screen" class="hidden min-h-screen flex bg-dark">
         
-        <!-- Sidebar Navigation -->
-        <aside class="w-64 border-r border-slate-800 flex flex-col fixed h-full bg-dark/50 backdrop-blur-md z-40">
-            <div class="p-6 flex items-center gap-3">
-                <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
-                    <i class="ph-bold ph-circles-three-plus text-xl"></i>
+        <!-- SIDEBAR -->
+        <aside class="w-72 border-r border-slate-800/50 flex flex-col fixed h-full bg-dark/80 backdrop-blur-xl z-40">
+            <div class="p-8 flex items-center gap-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-primary to-indigo-700 rounded-xl flex items-center justify-center text-white shadow-lg">
+                    <i class="ph-bold ph-lightning text-2xl"></i>
                 </div>
-                <span class="font-bold text-xl tracking-tight">Network</span>
+                <div>
+                    <span class="block font-black text-xl tracking-tighter italic">NETWORK</span>
+                    <span class="block text-[9px] text-primary font-black uppercase tracking-widest leading-none">Status: Online</span>
+                </div>
             </div>
 
-            <nav class="flex-1 px-4 space-y-1">
-                <button onclick="UI.switchView('feed')" class="nav-btn active w-full flex items-center gap-3 px-4 py-3 text-slate-400 rounded-xl hover:bg-slate-800 hover:text-white transition">
-                    <i class="ph-fill ph-house text-xl"></i> <span class="font-medium">Home Feed</span>
+            <nav class="flex-1 px-4 space-y-2">
+                <p class="px-4 text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] mb-2">Main Grid</p>
+                <button onclick="UI.switchView('feed')" class="nav-btn active w-full flex items-center gap-4 px-4 py-4 text-slate-400 rounded-2xl hover:bg-slate-800/50 hover:text-white transition group">
+                    <i class="ph-fill ph-planet text-2xl group-hover:scale-110 transition"></i> 
+                    <span class="font-bold tracking-tight">Public Feed</span>
                 </button>
-                <button onclick="UI.switchView('messages'); Chat.init();" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-slate-400 rounded-xl hover:bg-slate-800 hover:text-white transition">
-                    <i class="ph-fill ph-chat-circle-dots text-xl"></i> <span class="font-medium">Chat</span>
+                <button onclick="UI.switchView('messages'); Chat.init();" class="nav-btn w-full flex items-center gap-4 px-4 py-4 text-slate-400 rounded-2xl hover:bg-slate-800/50 hover:text-white transition group">
+                    <i class="ph-fill ph-chat-teardrop-text text-2xl group-hover:scale-110 transition"></i> 
+                    <span class="font-bold tracking-tight">Ciphers</span>
                 </button>
-                <button onclick="UI.switchView('seameed')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-slate-400 rounded-xl hover:bg-slate-800 hover:text-white transition">
-                    <i class="ph-fill ph-waves text-xl"></i> <span class="font-medium">Seameed</span>
+                <button onclick="UI.switchView('seameed')" class="nav-btn w-full flex items-center gap-4 px-4 py-4 text-slate-400 rounded-2xl hover:bg-slate-800/50 hover:text-white transition group">
+                    <i class="ph-fill ph-waves text-2xl group-hover:scale-110 transition"></i> 
+                    <span class="font-bold tracking-tight">Waves</span>
                 </button>
-                <button id="admin-nav-btn" onclick="UI.switchView('admin')" class="hidden w-full flex items-center gap-3 px-4 py-3 text-danger/70 rounded-xl hover:bg-danger/10 hover:text-danger transition">
-                    <i class="ph-fill ph-shield-checkered text-xl"></i> <span class="font-medium">Admin Control</span>
-                </button>
+                
+                <div id="admin-nav-section" class="hidden pt-6">
+                    <p class="px-4 text-[9px] font-black text-danger/60 uppercase tracking-[0.2em] mb-2">Overwatch</p>
+                    <button onclick="UI.switchView('admin')" class="w-full flex items-center gap-4 px-4 py-4 text-danger/70 rounded-2xl hover:bg-danger/10 hover:text-danger transition group">
+                        <i class="ph-fill ph-shield-checkered text-2xl group-hover:rotate-12 transition"></i> 
+                        <span class="font-bold tracking-tight uppercase">Admin Console</span>
+                    </button>
+                </div>
             </nav>
 
-            <div class="p-4 mt-auto">
-                <div onclick="UI.showProfile(Auth.currentUser.username)" class="flex items-center gap-3 p-3 bg-slate-800/50 rounded-2xl border border-slate-700/50 cursor-pointer hover:bg-slate-800 transition">
-                    <div id="sidebar-avatar" class="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-bold text-white">?</div>
+            <!-- Current User Mini Profile -->
+            <div class="p-6 mt-auto">
+                <div onclick="UI.showProfile(Auth.currentUser.username)" class="flex items-center gap-4 p-4 bg-slate-800/30 rounded-[1.5rem] border border-slate-700/30 cursor-pointer hover:border-primary/50 transition group">
+                    <div id="sidebar-avatar" class="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center font-black text-white text-xl shadow-lg shadow-primary/20 group-hover:scale-105 transition">?</div>
                     <div class="flex-1 overflow-hidden">
-                        <div id="sidebar-username" class="font-bold text-sm truncate">User</div>
-                        <div class="text-[10px] text-slate-500 uppercase font-black tracking-widest">Active</div>
+                        <div id="sidebar-username" class="font-black text-sm truncate uppercase tracking-tight">User</div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 bg-success rounded-full animate-pulse"></span>
+                            <span class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Active</span>
+                        </div>
                     </div>
-                    <button onclick="Auth.logout()" class="text-slate-500 hover:text-danger p-1">
-                        <i class="ph ph-sign-out text-xl"></i>
+                    <button onclick="event.stopPropagation(); Auth.logout()" class="text-slate-600 hover:text-danger p-2 transition">
+                        <i class="ph-bold ph-power text-xl"></i>
                     </button>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Content Area -->
-        <main class="flex-1 ml-64 flex flex-col">
+        <!-- MAIN AREA -->
+        <main class="flex-1 ml-72 flex flex-col min-h-screen">
             
-            <!-- Top Header -->
-            <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 sticky top-0 bg-dark/80 backdrop-blur-md z-30">
-                <h2 id="page-title" class="text-lg font-bold">Home Feed</h2>
+            <header class="h-20 border-b border-slate-800/50 flex items-center justify-between px-10 sticky top-0 bg-dark/80 backdrop-blur-xl z-30">
+                <div>
+                    <h2 id="page-title" class="text-xl font-black italic tracking-tighter uppercase">Home Feed</h2>
+                </div>
+                
                 <div class="flex items-center gap-4">
-                    <button onclick="UI.toggleSearch(true)" class="p-2 text-slate-400 hover:text-white transition">
-                        <i class="ph ph-magnifying-glass text-2xl"></i>
+                    <div class="hidden md:flex items-center bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl focus-within:border-primary transition group">
+                        <i class="ph ph-magnifying-glass text-slate-500 group-focus-within:text-primary"></i>
+                        <input type="text" oninput="App.search(this.value)" placeholder="Search nodes..." class="bg-transparent border-none focus:ring-0 text-xs text-white ml-2 w-48">
+                    </div>
+                    <button class="p-2.5 text-slate-400 hover:text-white bg-slate-800/50 rounded-xl transition relative">
+                        <i class="ph ph-bell text-2xl"></i>
+                        <span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full"></span>
                     </button>
                 </div>
             </header>
 
-            <!-- Content Container -->
-            <div id="content-area" class="flex-1">
+            <div id="content-area" class="flex-1 overflow-y-auto">
                 
                 <!-- VIEW: FEED -->
-                <div id="view-feed" class="view-section p-8 max-w-3xl mx-auto space-y-6">
-                    <div class="bg-card p-6 rounded-3xl border border-slate-700 shadow-xl">
-                        <div class="flex gap-4">
-                            <div class="w-12 h-12 rounded-2xl bg-primary flex-shrink-0 flex items-center justify-center font-bold text-white shadow-lg shadow-primary/20">
-                                <i class="ph ph-pencil-line text-2xl"></i>
+                <div id="view-feed" class="view-section p-10 max-w-4xl mx-auto space-y-8 animate-slide">
+                    <!-- Composer -->
+                    <div class="bg-card p-8 rounded-[2rem] border border-slate-700/50 shadow-2xl shadow-black/20">
+                        <div class="flex gap-6">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 flex-shrink-0 flex items-center justify-center font-black text-white text-2xl shadow-xl">
+                                <i class="ph-fill ph-note-pencil"></i>
                             </div>
-                            <textarea id="post-input" placeholder="What's happening on the grid?" class="w-full bg-transparent border-none focus:ring-0 text-lg resize-none mt-2 h-24" maxlength="500"></textarea>
+                            <div class="flex-1">
+                                <textarea id="post-input" placeholder="Broadcast a transmission to the grid..." class="w-full bg-transparent border-none focus:ring-0 text-xl font-medium resize-none mt-2 h-28 placeholder-slate-600" maxlength="1000"></textarea>
+                            </div>
                         </div>
-                        <div class="flex justify-between items-center mt-4 pt-4 border-t border-slate-800/50">
-                            <div class="flex gap-2">
-                                <button class="p-2 text-primary hover:bg-primary/10 rounded-lg transition"><i class="ph ph-image text-xl"></i></button>
-                                <button class="p-2 text-primary hover:bg-primary/10 rounded-lg transition"><i class="ph ph-calendar-blank text-xl"></i></button>
+                        <div class="flex justify-between items-center mt-6 pt-6 border-t border-slate-800/50">
+                            <div class="flex gap-3">
+                                <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 rounded-xl transition"><i class="ph ph-image text-2xl"></i></button>
+                                <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 rounded-xl transition"><i class="ph ph-link text-2xl"></i></button>
+                                <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 rounded-xl transition"><i class="ph ph-hash text-2xl"></i></button>
                             </div>
-                            <button onclick="App.createPost()" class="bg-primary hover:bg-primaryDark text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-primary/20 transition transform active:scale-95">
-                                Post
+                            <button onclick="App.createPost()" class="bg-primary hover:bg-primaryDark text-white px-8 py-3 rounded-2xl font-black shadow-xl shadow-primary/20 transition transform active:scale-95 uppercase tracking-widest text-sm">
+                                Broadcast
                             </button>
                         </div>
                     </div>
-                    <div id="feed-container" class="space-y-6 pb-20"></div>
+                    
+                    <div id="feed-container" class="space-y-8 pb-32"></div>
                 </div>
 
-                <!-- VIEW: MESSAGES (CHAT) -->
-                <div id="view-messages" class="view-section hidden h-[calc(100vh-64px)] flex">
-                    <!-- Sidebar: Directory & Groups -->
-                    <div id="chat-sidebar" class="flex flex-col bg-slate-900/50">
-                        <div class="p-4 border-b border-slate-800">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="font-bold">Chat Directory</h3>
-                                <button onclick="Chat.toggleGroupMode()" id="group-mode-btn" class="text-xs bg-primary/20 text-primary px-3 py-1 rounded-full font-bold hover:bg-primary/30">New Group</button>
+                <!-- VIEW: MESSAGES -->
+                <div id="view-messages" class="view-section hidden h-[calc(100vh-80px)] flex animate-slide">
+                    <div class="w-80 border-r border-slate-800/50 flex flex-col bg-slate-900/20">
+                        <div class="p-6 border-b border-slate-800/50">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="font-black text-sm uppercase tracking-widest italic">Ciphers</h3>
+                                <button onclick="Chat.toggleGroupMode()" id="group-mode-btn" class="text-[9px] bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-primary hover:text-white transition">New Mesh</button>
                             </div>
-                            <input type="text" id="chat-user-search" placeholder="Search users..." class="w-full bg-slate-800 rounded-lg p-2 text-sm border-none focus:ring-1 focus:ring-primary">
+                            <div class="relative">
+                                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                                <input type="text" id="chat-user-search" placeholder="Filter nodes..." class="w-full bg-slate-800/50 rounded-xl p-3 pl-10 text-xs border-none focus:ring-1 focus:ring-primary placeholder-slate-600">
+                            </div>
                         </div>
-                        <div id="chat-user-list" class="flex-1 overflow-y-auto">
-                            <!-- List of everyone -->
-                        </div>
-                        <div id="chat-group-confirm" class="hidden p-4 bg-primary/10 border-t border-primary/20">
-                            <p class="text-[10px] text-primary uppercase font-bold mb-2">Selected for Group:</p>
-                            <div id="selected-group-users" class="flex flex-wrap gap-1 mb-3"></div>
-                            <button onclick="Chat.startGroup()" class="w-full bg-primary text-white text-xs font-bold py-2 rounded-lg">Create Group Chat</button>
+                        <div id="chat-user-list" class="flex-1 overflow-y-auto"></div>
+                        <div id="chat-group-confirm" class="hidden p-6 bg-primary/5 border-t border-primary/10">
+                            <p class="text-[9px] text-primary uppercase font-black tracking-widest mb-3">Target Nodes:</p>
+                            <div id="selected-group-users" class="flex flex-wrap gap-2 mb-4"></div>
+                            <button onclick="Chat.startGroup()" class="w-full bg-primary text-white text-[10px] font-black py-3 rounded-xl uppercase tracking-[0.2em] shadow-lg shadow-primary/20 hover:bg-primaryDark transition">Initialize Group Cipher</button>
                         </div>
                     </div>
-                    <!-- Main Chat Area -->
-                    <div class="flex-1 flex flex-col bg-dark/20 relative">
-                        <div id="chat-empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 z-0">
-                            <i class="ph ph-chat-circle-dots text-6xl mb-4 opacity-20"></i>
-                            <p>Select a person or create a group to start messaging</p>
+                    
+                    <div class="flex-1 flex flex-col bg-dark/40 relative">
+                        <div id="chat-empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-600">
+                            <div class="w-24 h-24 rounded-full bg-slate-800/30 flex items-center justify-center mb-6">
+                                <i class="ph-fill ph-chat-circle-dots text-5xl opacity-20"></i>
+                            </div>
+                            <p class="font-bold text-sm uppercase tracking-widest italic opacity-40">Awaiting Signal</p>
                         </div>
-                        <div id="chat-active-window" class="flex-1 flex flex-col hidden z-10">
-                            <div class="h-14 border-b border-slate-800 flex items-center px-6 bg-dark/40 justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div id="chat-target-avatar" class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-white">?</div>
-                                    <span id="chat-target-name" class="font-bold text-sm">Target</span>
+                        
+                        <div id="chat-active-window" class="flex-1 flex flex-col hidden z-10 animate-slide">
+                            <div class="h-20 border-b border-slate-800/50 flex items-center px-10 bg-dark/60 justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div id="chat-target-avatar" class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-sm font-black text-white shadow-lg">?</div>
+                                    <div>
+                                        <span id="chat-target-name" class="font-black text-sm uppercase tracking-tight">Node Identity</span>
+                                        <span class="block text-[9px] text-success font-bold uppercase tracking-widest">Secure Connection</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-400 hover:text-white transition"><i class="ph ph-phone text-xl"></i></button>
+                                    <button class="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-400 hover:text-white transition"><i class="ph ph-video-camera text-xl"></i></button>
+                                    <button class="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-400 hover:text-white transition"><i class="ph ph-dots-three-outline text-xl"></i></button>
                                 </div>
                             </div>
-                            <div id="chat-messages-container" class="flex-1 overflow-y-auto p-6 flex flex-col space-y-4">
-                                <!-- Messages -->
-                            </div>
-                            <div class="p-4 border-t border-slate-800 bg-dark/60">
-                                <div class="flex gap-2 bg-slate-800 p-2 rounded-xl border border-slate-700">
-                                    <input type="text" id="chat-input" placeholder="Type a message..." class="flex-1 bg-transparent border-none text-white focus:ring-0 text-sm px-2">
-                                    <button onclick="Chat.sendMessage()" class="bg-primary text-white w-10 h-10 rounded-lg flex items-center justify-center hover:bg-primaryDark transition">
-                                        <i class="ph-fill ph-paper-plane-right"></i>
+                            <div id="chat-messages-container" class="flex-1 overflow-y-auto p-10 flex flex-col space-y-6"></div>
+                            <div class="p-8 border-t border-slate-800/50 bg-dark/60">
+                                <div class="flex gap-4 items-center bg-slate-900/50 p-2 rounded-2xl border border-slate-700/50">
+                                    <button class="w-10 h-10 flex items-center justify-center text-slate-500 hover:text-white transition"><i class="ph ph-plus-circle text-2xl"></i></button>
+                                    <input type="text" id="chat-input" placeholder="Type an encrypted message..." class="flex-1 bg-transparent border-none text-white focus:ring-0 text-sm px-2 font-medium">
+                                    <button onclick="Chat.sendMessage()" class="bg-primary text-white w-12 h-12 rounded-xl flex items-center justify-center hover:bg-primaryDark transition shadow-lg shadow-primary/20">
+                                        <i class="ph-fill ph-paper-plane-right text-xl"></i>
                                     </button>
                                 </div>
                             </div>
@@ -212,98 +268,154 @@
                     </div>
                 </div>
 
-                <!-- VIEW: SEAMEED -->
-                <div id="view-seameed" class="view-section hidden p-8">
-                    <div class="max-w-4xl mx-auto space-y-8">
-                        <div class="text-center">
-                            <h2 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-primary">SEAMEED</h2>
-                            <p class="text-slate-400 mt-2">Experimental high-fidelity shared space.</p>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="bg-card p-6 rounded-3xl border border-pink-500/20 shadow-xl shadow-pink-500/5">
-                                <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="ph ph-sparkle text-pink-500"></i> Localized Swarm</h3>
-                                <p class="text-slate-400 text-sm mb-4 leading-relaxed">Seameed allows for sub-atomic networking threads. Join a thread to broadcast to localized users only.</p>
-                                <button class="w-full bg-pink-500/10 hover:bg-pink-500/20 text-pink-500 font-bold py-3 rounded-xl transition">Connect to Node 01</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- VIEW: ADMIN -->
-                <div id="view-admin" class="view-section hidden p-8">
-                    <div class="max-w-5xl mx-auto space-y-6">
-                        <div class="flex justify-between items-center">
-                            <h2 class="text-2xl font-black text-danger">GOD MODE: SYSTEM CONTROL</h2>
-                            <div class="bg-danger/20 text-danger px-4 py-1 rounded-full text-xs font-bold animate-pulse uppercase tracking-widest">Authorized Admin Only</div>
+                <div id="view-admin" class="view-section hidden p-10 admin-grid animate-slide">
+                    <div class="max-w-6xl mx-auto space-y-8">
+                        <div class="flex justify-between items-end border-b border-danger/20 pb-6">
+                            <div>
+                                <h2 class="text-4xl font-black text-danger italic tracking-tighter">OVERWATCH_CMD</h2>
+                                <p class="text-slate-500 font-mono text-[10px] uppercase tracking-widest mt-2">Level 0: Full System Sovereignty Enabled</p>
+                            </div>
+                            <div class="flex gap-4">
+                                <div class="text-right">
+                                    <div id="server-uptime" class="text-xs font-mono text-danger font-bold">UPTIME: 00:00:00</div>
+                                    <div class="text-[9px] text-slate-600 uppercase font-black tracking-widest">Core Status: Stable</div>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Pending Approvals -->
-                        <div class="bg-card border border-primary/30 rounded-3xl overflow-hidden mb-6">
-                            <div class="p-4 bg-primary/10 border-b border-primary/20 flex items-center gap-2">
-                                <i class="ph ph-user-circle-plus text-primary text-xl"></i>
-                                <h3 class="font-bold text-primary uppercase text-sm tracking-widest">Pending Account Approvals</h3>
+                        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                            <!-- Stats Cards -->
+                            <div class="bg-card/50 border border-slate-700/50 p-6 rounded-[2rem] flex flex-col justify-between">
+                                <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Nodes</span>
+                                <div id="admin-total-users" class="text-4xl font-black text-white mt-2">0</div>
                             </div>
-                            <div id="admin-approvals-list" class="p-4 space-y-2 max-h-64 overflow-y-auto">
-                                <p class="text-slate-500 text-sm italic">No pending accounts.</p>
+                            <div class="bg-card/50 border border-slate-700/50 p-6 rounded-[2rem] flex flex-col justify-between">
+                                <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Transmissions</span>
+                                <div id="admin-stat-posts" class="text-4xl font-black text-primary mt-2">0</div>
+                            </div>
+                            <div class="bg-card/50 border border-slate-700/50 p-6 rounded-[2rem] flex flex-col justify-between">
+                                <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Active Violations</span>
+                                <div class="text-4xl font-black text-danger mt-2">0</div>
+                            </div>
+                            <div class="bg-card/50 border border-slate-700/50 p-6 rounded-[2rem] flex flex-col justify-between">
+                                <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Core Load</span>
+                                <div class="text-4xl font-black text-success mt-2">1.2%</div>
                             </div>
                         </div>
-                        
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div class="lg:col-span-2 bg-card border border-slate-700 rounded-3xl overflow-hidden">
-                                <div class="p-4 bg-slate-800/50 border-b border-slate-700 font-bold flex justify-between">
-                                    <span>User Management</span>
-                                    <span id="admin-total-users" class="text-xs text-slate-500">0 Total</span>
-                                </div>
-                                <div id="admin-user-list" class="divide-y divide-slate-800 overflow-y-auto max-h-[600px]"></div>
-                            </div>
-                            <div class="space-y-6">
-                                <div class="bg-card border border-slate-700 rounded-3xl p-6">
-                                    <h3 class="font-bold mb-4">Quick Stats</h3>
-                                    <div class="space-y-3">
-                                        <div class="flex justify-between items-center p-3 bg-slate-900 rounded-xl">
-                                            <span class="text-sm text-slate-400">Reports</span>
-                                            <span class="text-danger font-bold">0</span>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Pending Approvals -->
+                            <div class="lg:col-span-1 space-y-6">
+                                <div class="bg-card/50 border border-primary/30 rounded-[2rem] overflow-hidden">
+                                    <div class="p-6 bg-primary/10 border-b border-primary/20 flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <i class="ph-bold ph-user-plus text-primary text-xl"></i>
+                                            <h3 class="font-black text-[10px] text-primary uppercase tracking-widest">Access Requests</h3>
                                         </div>
-                                        <div class="flex justify-between items-center p-3 bg-slate-900 rounded-xl">
-                                            <span class="text-sm text-slate-400">Total Posts</span>
-                                            <span id="admin-stat-posts" class="text-primary font-bold">0</span>
-                                        </div>
+                                        <span class="bg-primary text-white text-[9px] font-black px-2 py-0.5 rounded-full" id="pending-count">0</span>
                                     </div>
+                                    <div id="admin-approvals-list" class="p-4 space-y-3 max-h-[400px] overflow-y-auto"></div>
                                 </div>
-                                <button onclick="Admin.wipeAllData()" class="w-full bg-danger/10 hover:bg-danger text-danger hover:text-white font-bold py-4 rounded-2xl transition border border-danger/30">
-                                    NUCLEAR WIPE (ALL DATA)
-                                </button>
+                                
+                                <div class="bg-card/50 border border-danger/30 rounded-[2rem] p-8 text-center">
+                                    <i class="ph-fill ph-warning-octagon text-5xl text-danger/30 mb-4"></i>
+                                    <h3 class="font-black text-sm text-danger uppercase tracking-widest mb-2">Nuclear Protocol</h3>
+                                    <p class="text-[10px] text-slate-500 mb-6 leading-relaxed uppercase">Instantly purges all data from the grid except for the root administrator.</p>
+                                    <button onclick="Admin.wipeAllData()" class="w-full bg-danger/10 hover:bg-danger text-danger hover:text-white font-black py-4 rounded-2xl transition border border-danger/30 uppercase tracking-widest text-xs">
+                                        Execute Wipe
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- User Management -->
+                            <div class="lg:col-span-2 bg-card/50 border border-slate-700/50 rounded-[2.5rem] overflow-hidden">
+                                <div class="p-6 bg-slate-800/50 border-b border-slate-700/50 font-black flex justify-between items-center">
+                                    <span class="uppercase tracking-widest text-xs italic">Registry Overwatch</span>
+                                    <input type="text" placeholder="Filter registry..." class="bg-slate-900 border border-slate-700 px-4 py-1.5 rounded-xl text-[10px] w-48 focus:border-primary outline-none transition">
+                                </div>
+                                <div id="admin-user-list" class="divide-y divide-slate-800/50 overflow-y-auto max-h-[600px]"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- VIEW: PROFILE -->
-                <div id="view-profile" class="view-section hidden animate-fade">
-                    <div id="profile-header-bg" class="h-48 bg-gradient-to-r from-primary/30 to-purple-500/30"></div>
-                    <div class="max-w-4xl mx-auto px-8 -mt-16">
-                        <div class="flex items-end justify-between mb-8">
-                            <div class="flex items-end gap-6">
-                                <div id="profile-avatar" class="w-32 h-32 rounded-3xl bg-dark border-4 border-dark flex items-center justify-center text-4xl font-black text-white shadow-2xl relative">
+                <div id="view-profile" class="view-section hidden animate-slide">
+                    <div id="profile-header-bg" class="h-64 bg-gradient-to-r from-primary/30 via-indigo-900/40 to-dark relative overflow-hidden">
+                        <div class="absolute inset-0 opacity-10 admin-grid"></div>
+                    </div>
+                    <div class="max-w-5xl mx-auto px-10 -mt-24 pb-20">
+                        <div class="flex items-end justify-between mb-12">
+                            <div class="flex items-end gap-8">
+                                <div id="profile-avatar" class="w-44 h-44 rounded-[3rem] bg-dark border-[8px] border-dark flex items-center justify-center text-6xl font-black text-white shadow-2xl relative z-10 overflow-hidden">
                                     ?
-                                    <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 border-4 border-dark rounded-full"></div>
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                                 </div>
-                                <div class="mb-2">
-                                    <h2 id="profile-username" class="text-3xl font-black text-white">Username</h2>
-                                    <p id="profile-handle" class="text-slate-400">@handle</p>
+                                <div class="mb-4 z-10">
+                                    <div class="flex items-center gap-3">
+                                        <h2 id="profile-username" class="text-5xl font-black text-white italic tracking-tighter uppercase">Username</h2>
+                                        <div id="profile-badge" class="hidden px-3 py-1 bg-primary/20 text-primary border border-primary/30 rounded-full text-[9px] font-black uppercase tracking-widest">Admin</div>
+                                    </div>
+                                    <p id="profile-handle" class="text-primary font-mono text-sm font-bold mt-1">@identity.node</p>
                                 </div>
                             </div>
-                            <div id="profile-actions" class="mb-2 flex flex-col gap-3 items-end">
-                                <!-- Profile Buttons & Admin Ban Tools will go here -->
-                            </div>
-                        </div>
-                        
-                        <div class="flex gap-8 border-b border-slate-800 mb-8">
-                            <button onclick="UI.toggleProfileTab('posts')" id="tab-posts" class="pb-3 text-white font-bold border-b-2 border-primary transition">Posts</button>
-                            <button onclick="UI.toggleProfileTab('seameed')" id="tab-seameed" class="pb-3 text-slate-500 font-bold border-b-2 border-transparent hover:text-white transition">Media</button>
+                            <div id="profile-actions" class="mb-4 flex flex-col gap-3 items-end"></div>
                         </div>
 
-                        <div id="profile-posts" class="space-y-6 pb-20"></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                            <!-- Sidebar Info -->
+                            <div class="space-y-8">
+                                <div class="bg-card/40 p-8 rounded-[2rem] border border-slate-700/50 space-y-6">
+                                    <p id="profile-bio" class="text-slate-400 text-sm leading-relaxed font-medium">No system log provided for this entity.</p>
+                                    <div class="flex gap-4 border-t border-slate-800 pt-6">
+                                        <div class="flex-1 text-center">
+                                            <div id="count-followers" class="text-xl font-black text-white">0</div>
+                                            <div class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Followers</div>
+                                        </div>
+                                        <div class="w-px bg-slate-800"></div>
+                                        <div class="flex-1 text-center">
+                                            <div id="count-following" class="text-xl font-black text-white">0</div>
+                                            <div class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Following</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Content Tabs -->
+                            <div class="lg:col-span-2 space-y-8">
+                                <div class="flex gap-10 border-b border-slate-800">
+                                    <button onclick="UI.toggleProfileTab('posts')" id="tab-posts" class="pb-4 text-white font-black uppercase tracking-widest text-xs border-b-2 border-primary transition">Transmissions</button>
+                                    <button onclick="UI.toggleProfileTab('seameed')" id="tab-seameed" class="pb-4 text-slate-500 font-black uppercase tracking-widest text-xs border-b-2 border-transparent hover:text-white transition italic">Data Waves</button>
+                                </div>
+                                <div id="profile-posts" class="space-y-8"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: SEAMEED -->
+                <div id="view-seameed" class="view-section hidden p-12 animate-slide">
+                    <div class="max-w-4xl mx-auto space-y-12 text-center">
+                        <div class="space-y-4">
+                            <h2 class="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-primary to-cyan-400 italic tracking-tighter">SEAMEED</h2>
+                            <p class="text-slate-500 font-bold uppercase tracking-[0.4em] text-xs">Experimental High-Fidelity Shared Space</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+                            <div class="bg-card p-10 rounded-[3rem] border border-pink-500/20 shadow-2xl hover:border-pink-500/50 transition group">
+                                <i class="ph ph-sparkle text-5xl text-pink-500 mb-6 group-hover:rotate-12 transition"></i>
+                                <h3 class="text-2xl font-black mb-4 uppercase tracking-tight">Swarm Mesh</h3>
+                                <p class="text-slate-400 text-sm mb-8 leading-relaxed">Broadcast to sub-atomic networking threads within your localized node proximity.</p>
+                                <button class="w-full bg-pink-500/10 hover:bg-pink-500 text-pink-500 hover:text-white font-black py-4 rounded-2xl transition border border-pink-500/30 uppercase tracking-widest text-xs">Connect to Node 01</button>
+                            </div>
+                            <div class="bg-card p-10 rounded-[3rem] border border-cyan-500/20 shadow-2xl hover:border-cyan-500/50 transition group">
+                                <i class="ph ph-activity text-5xl text-cyan-500 mb-6 group-hover:scale-110 transition"></i>
+                                <h3 class="text-2xl font-black mb-4 uppercase tracking-tight">Fluid Proxy</h3>
+                                <p class="text-slate-400 text-sm mb-8 leading-relaxed">Engage in real-time visual data synchronization across peer-to-peer visualizers.</p>
+                                <button class="w-full bg-cyan-500/10 hover:bg-cyan-500 text-cyan-500 hover:text-white font-black py-4 rounded-2xl transition border border-cyan-500/30 uppercase tracking-widest text-xs">Initialize Sync</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -312,23 +424,23 @@
     </div>
 
     <!-- Search Overlay -->
-    <div id="search-panel" class="fixed inset-0 z-50 bg-dark/95 backdrop-blur-xl transition-transform duration-500 transform -translate-y-full flex flex-col items-center p-12">
-        <button onclick="UI.toggleSearch(false)" class="absolute top-8 right-8 text-slate-400 hover:text-white"><i class="ph ph-x text-4xl"></i></button>
-        <div class="w-full max-w-2xl">
-            <input type="text" id="search-input" oninput="App.search(this.value)" placeholder="Search the network..." class="w-full bg-transparent border-b-4 border-slate-800 text-4xl font-black focus:border-primary transition outline-none py-4">
-            <div id="search-results" class="mt-12 space-y-4"></div>
+    <div id="search-panel" class="fixed inset-0 z-50 bg-dark/95 backdrop-blur-3xl transition-transform duration-700 transform -translate-y-full flex flex-col items-center p-20">
+        <button onclick="UI.toggleSearch(false)" class="absolute top-10 right-10 text-slate-500 hover:text-white transition"><i class="ph ph-x text-5xl"></i></button>
+        <div class="w-full max-w-4xl">
+            <input type="text" id="search-input" oninput="App.search(this.value)" placeholder="Enter grid signature..." class="w-full bg-transparent border-b-8 border-slate-800 text-7xl font-black italic tracking-tighter focus:border-primary transition outline-none py-10 uppercase">
+            <div id="search-results" class="mt-20 grid grid-cols-1 md:grid-cols-2 gap-8"></div>
         </div>
     </div>
 
     <script>
-        // --- DATA STORE (LOCAL STORAGE) ---
+        // --- DATA STORE ---
         const DB = {
-            getUsers: () => JSON.parse(localStorage.getItem('net_v3_users')) || [],
-            saveUsers: (u) => localStorage.setItem('net_v3_users', JSON.stringify(u)),
-            getPosts: () => JSON.parse(localStorage.getItem('net_v3_posts')) || [],
-            savePosts: (p) => localStorage.setItem('net_v3_posts', JSON.stringify(p)),
-            getChats: () => JSON.parse(localStorage.getItem('net_v3_chats')) || [],
-            saveChats: (c) => localStorage.setItem('net_v3_chats', JSON.stringify(c))
+            getUsers: () => JSON.parse(localStorage.getItem('net_v4_users')) || [],
+            saveUsers: (u) => localStorage.setItem('net_v4_users', JSON.stringify(u)),
+            getPosts: () => JSON.parse(localStorage.getItem('net_v4_posts')) || [],
+            savePosts: (p) => localStorage.setItem('net_v4_posts', JSON.stringify(p)),
+            getChats: () => JSON.parse(localStorage.getItem('net_v4_chats')) || [],
+            saveChats: (c) => localStorage.setItem('net_v4_chats', JSON.stringify(c))
         };
 
         // --- AUTH LOGIC ---
@@ -338,80 +450,74 @@
 
             toggleMode: () => {
                 Auth.isSignUp = !Auth.isSignUp;
-                document.getElementById('auth-desc').innerText = Auth.isSignUp ? 'Create your profile and join the grid.' : 'Welcome back, join the grid.';
-                document.getElementById('auth-btn').innerText = Auth.isSignUp ? 'Sign Up' : 'Log In';
-                document.getElementById('auth-toggle').innerHTML = Auth.isSignUp ? 'Already have an account? <span class="text-primary font-bold">Log In</span>' : 'Don\'t have an account? <span class="text-primary font-bold">Sign Up</span>';
+                document.getElementById('auth-desc').innerText = Auth.isSignUp ? 'REGISTER NEW NODE IDENTITY' : 'SECURE DECENTRALIZED ACCESS POINT';
+                document.getElementById('auth-btn').innerText = Auth.isSignUp ? 'Initialize Node' : 'Initialize Session';
+                document.getElementById('auth-toggle').innerHTML = Auth.isSignUp ? 'EXISTING NODE? <span class="text-primary">LOGIN</span>' : 'NEED ACCESS? <span class="text-primary">REGISTER NODE</span>';
+            },
+
+            recoverAdmin: () => {
+                const users = DB.getUsers();
+                const admin = users.find(u => u.isAdmin);
+                if (!admin) {
+                    UI.notify("No Admin Detected. Become the root by registering.", "danger");
+                    return;
+                }
+                admin.password = "admin123";
+                DB.saveUsers(users);
+                UI.notify(`Recovery: Admin is [${admin.username}]. Password reset to [admin123]`, "success", 10000);
             },
 
             handleSubmit: () => {
                 const u = document.getElementById('auth-username').value.trim();
                 const p = document.getElementById('auth-password').value;
                 const err = document.getElementById('auth-error');
-                const succ = document.getElementById('auth-success');
                 err.classList.add('hidden');
-                succ.classList.add('hidden');
 
+                const users = DB.getUsers();
                 if (Auth.isSignUp) {
-                    const users = DB.getUsers();
                     if (users.find(x => x.username.toLowerCase() === u.toLowerCase())) {
-                        err.innerText = "Username already taken";
+                        err.innerText = "IDENTITY SIGNATURE TAKEN";
                         err.classList.remove('hidden');
                         return;
                     }
+                    const isFirst = users.length === 0;
                     const newUser = {
-                        username: u,
-                        password: p,
-                        isAdmin: users.length === 0, // First user is admin
-                        isBanned: false,
-                        banExpires: null,
-                        isApproved: users.length === 0, // First user approved automatically
+                        username: u, password: p,
+                        isAdmin: isFirst,
+                        isBanned: false, banExpires: null,
+                        isApproved: isFirst,
                         joined: Date.now(),
-                        followers: [],
-                        following: [],
-                        bio: "New grid entity.",
+                        followers: [], following: [],
+                        bio: "Grid node active. No further logs.",
                         posts: []
                     };
                     users.push(newUser);
                     DB.saveUsers(users);
-                    
-                    if(newUser.isAdmin) {
-                        succ.innerText = "Admin Account Created! Please Log In.";
+                    if (isFirst) {
+                        UI.notify("ROOT PRIVILEGES GRANTED", "success");
+                        Auth.toggleMode();
                     } else {
-                        succ.innerText = "Account created! Waiting for Admin Approval.";
+                        UI.notify("NODE REGISTERED. AWAITING OVERWATCH APPROVAL.", "success");
+                        Auth.toggleMode();
                     }
-                    succ.classList.remove('hidden');
-                    Auth.toggleMode();
                 } else {
-                    const users = DB.getUsers();
                     const user = users.find(x => x.username.toLowerCase() === u.toLowerCase() && x.password === p);
+                    if (!user) { err.innerText = "INVALID CIPHER OR IDENTITY"; err.classList.remove('hidden'); return; }
                     
-                    if (!user) {
-                        err.innerText = "Invalid credentials";
-                        err.classList.remove('hidden');
-                        return;
-                    }
-                    
-                    // Check if ban is expired
-                    if (user.isBanned && user.banExpires && user.banExpires !== 'PERM') {
-                        if (Date.now() > user.banExpires) {
+                    if (user.isBanned) {
+                        if (user.banExpires !== 'PERM' && Date.now() > user.banExpires) {
                             user.isBanned = false;
                             user.banExpires = null;
                             DB.saveUsers(users);
+                        } else {
+                            err.innerText = user.banExpires === 'PERM' ? "NODE PERMANENTLY PURGED" : `NODE SUSPENDED UNTIL ${new Date(user.banExpires).toLocaleTimeString()}`;
+                            err.classList.remove('hidden');
+                            return;
                         }
                     }
-
-                    if (user.isBanned) {
-                        const remaining = user.banExpires === 'PERM' ? 'PERMANENTLY' : `until ${new Date(user.banExpires).toLocaleString()}`;
-                        err.innerText = `This account is suspended ${remaining}.`;
-                        err.classList.remove('hidden');
-                        return;
-                    }
-                    if (!user.isApproved) {
-                        err.innerText = "Account pending admin approval.";
-                        err.classList.remove('hidden');
-                        return;
-                    }
-
+                    
+                    if (!user.isApproved) { err.innerText = "ACCESS PENDING APPROVAL"; err.classList.remove('hidden'); return; }
+                    
                     Auth.currentUser = user;
                     Auth.login();
                 }
@@ -422,15 +528,12 @@
                 document.getElementById('app-screen').classList.remove('hidden');
                 document.getElementById('sidebar-username').innerText = Auth.currentUser.username;
                 document.getElementById('sidebar-avatar').innerText = Auth.currentUser.username[0].toUpperCase();
-                if (Auth.currentUser.isAdmin) document.getElementById('admin-nav-btn').classList.remove('hidden');
+                if (Auth.currentUser.isAdmin) document.getElementById('admin-nav-section').classList.remove('hidden');
                 UI.switchView('feed');
-                App.renderFeed();
+                UI.notify(`Welcome back, ${Auth.currentUser.username}`, "success");
             },
 
-            logout: () => {
-                Auth.currentUser = null;
-                location.reload();
-            }
+            logout: () => { Auth.currentUser = null; location.reload(); }
         };
 
         // --- APP LOGIC ---
@@ -439,17 +542,18 @@
                 const text = document.getElementById('post-input').value.trim();
                 if (!text) return;
                 const posts = DB.getPosts();
-                const newPost = {
-                    id: 'post_' + Date.now(),
-                    author: Auth.currentUser.username,
-                    content: text,
-                    timestamp: Date.now(),
-                    likes: [],
-                    comments: []
+                const newPost = { 
+                    id: 'tx_' + Date.now(), 
+                    author: Auth.currentUser.username, 
+                    content: text, 
+                    timestamp: Date.now(), 
+                    likes: [], 
+                    comments: [] 
                 };
                 posts.unshift(newPost);
                 DB.savePosts(posts);
                 document.getElementById('post-input').value = '';
+                UI.notify("Transmission Broadcasted", "success");
                 App.renderFeed();
             },
 
@@ -457,13 +561,16 @@
                 const container = document.getElementById('feed-container');
                 const posts = DB.getPosts();
                 const users = DB.getUsers();
-                
-                // Filter out posts from banned users
                 const visiblePosts = posts.filter(p => {
                     const author = users.find(u => u.username === p.author);
                     return author && !author.isBanned;
                 });
-
+                
+                if (visiblePosts.length === 0) {
+                    container.innerHTML = `<div class="p-20 text-center text-slate-600 font-black uppercase tracking-[0.3em] italic opacity-40">No signals detected on the grid</div>`;
+                    return;
+                }
+                
                 container.innerHTML = visiblePosts.map(p => UI.postTemplate(p)).join('');
             },
 
@@ -476,10 +583,9 @@
                     post.likes.push(Auth.currentUser.username);
                 }
                 DB.savePosts(posts);
-                App.renderFeed();
-                if (document.getElementById('view-profile').classList.contains('hidden') === false) {
-                    UI.showProfile(post.author);
-                }
+                // Selective refresh based on view
+                if (!document.getElementById('view-feed').classList.contains('hidden')) App.renderFeed();
+                if (!document.getElementById('view-profile').classList.contains('hidden')) UI.showProfile(post.author);
             },
 
             followUser: (targetName) => {
@@ -496,23 +602,33 @@
                 }
                 
                 DB.saveUsers(users);
-                Auth.currentUser = me; // Update session
+                Auth.currentUser = me;
                 UI.showProfile(targetName);
+                UI.notify(me.following.includes(targetName) ? `Linked with ${targetName}` : `Unlinked from ${targetName}`);
             },
 
             search: (query) => {
                 const results = document.getElementById('search-results');
-                if (!query) { results.innerHTML = ''; return; }
-                const users = DB.getUsers().filter(u => !u.isBanned && u.isApproved && u.username.toLowerCase().includes(query.toLowerCase()));
+                if (!query || query.length < 2) { results.innerHTML = ''; return; }
+                
+                const users = DB.getUsers().filter(u => 
+                    !u.isBanned && u.isApproved && 
+                    u.username.toLowerCase().includes(query.toLowerCase())
+                );
+                
                 results.innerHTML = users.map(u => `
-                    <div onclick="UI.showProfile('${u.username}'); UI.toggleSearch(false)" class="flex items-center gap-4 p-4 bg-slate-800/50 hover:bg-primary/20 rounded-2xl cursor-pointer transition border border-slate-700">
-                        <div class="w-12 h-12 bg-primary rounded-xl flex items-center justify-center font-bold">${u.username[0].toUpperCase()}</div>
+                    <div onclick="UI.showProfile('${u.username}'); UI.toggleSearch(false)" class="bg-card p-8 rounded-[2.5rem] border border-slate-700/50 hover:border-primary cursor-pointer transition flex items-center gap-6 group">
+                        <div class="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center font-black text-2xl group-hover:bg-primary transition">${u.username[0].toUpperCase()}</div>
                         <div>
-                            <div class="font-bold">${u.username}</div>
-                            <div class="text-xs text-slate-500">${u.followers.length} Followers</div>
+                            <div class="text-xl font-black uppercase italic tracking-tighter">${u.username}</div>
+                            <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">${u.followers.length} Peer Connections</div>
                         </div>
                     </div>
                 `).join('');
+                
+                if (users.length === 0) {
+                    results.innerHTML = `<div class="col-span-2 py-20 text-center font-black text-slate-700 uppercase tracking-widest">No matching signatures found</div>`;
+                }
             }
         };
 
@@ -527,13 +643,13 @@
                 Chat.isGroupMode = false;
                 Chat.selectedUsers = [];
                 document.getElementById('chat-group-confirm').classList.add('hidden');
-                document.getElementById('group-mode-btn').innerText = "New Group";
+                document.getElementById('group-mode-btn').innerText = "New Mesh";
             },
 
             toggleGroupMode: () => {
                 Chat.isGroupMode = !Chat.isGroupMode;
                 Chat.selectedUsers = [];
-                document.getElementById('group-mode-btn').innerText = Chat.isGroupMode ? "Cancel" : "New Group";
+                document.getElementById('group-mode-btn').innerText = Chat.isGroupMode ? "Abort" : "New Mesh";
                 document.getElementById('chat-group-confirm').classList.toggle('hidden', !Chat.isGroupMode);
                 Chat.renderDirectory();
             },
@@ -541,23 +657,27 @@
             renderDirectory: () => {
                 const users = DB.getUsers().filter(u => u.username !== Auth.currentUser.username && !u.isBanned && u.isApproved);
                 const list = document.getElementById('chat-user-list');
+                
                 list.innerHTML = users.map(u => {
                     const isSelected = Chat.selectedUsers.includes(u.username);
                     return `
-                        <div onclick="Chat.handleUserClick('${u.username}')" class="p-4 flex items-center gap-3 hover:bg-slate-800/50 cursor-pointer transition border-b border-slate-800/20 ${isSelected ? 'bg-primary/10' : ''}">
-                            <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-xs">${u.username[0].toUpperCase()}</div>
+                        <div onclick="Chat.handleUserClick('${u.username}')" class="p-5 flex items-center gap-4 hover:bg-slate-800/30 cursor-pointer transition border-b border-slate-800/20 ${isSelected ? 'bg-primary/5' : ''}">
+                            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center font-black text-xs">${u.username[0].toUpperCase()}</div>
                             <div class="flex-1">
-                                <div class="text-sm font-bold">${u.username}</div>
-                                <div class="text-[10px] text-slate-500 uppercase tracking-tighter">Approved User</div>
+                                <div class="text-xs font-black uppercase tracking-tight">${u.username}</div>
+                                <div class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Standard Node</div>
                             </div>
-                            ${Chat.isGroupMode ? `<div class="w-5 h-5 rounded-full border-2 border-slate-600 flex items-center justify-center">${isSelected ? '<div class="w-2.5 h-2.5 bg-primary rounded-full"></div>' : ''}</div>` : ''}
+                            ${Chat.isGroupMode ? `
+                                <div class="w-6 h-6 rounded-lg border-2 ${isSelected ? 'border-primary bg-primary' : 'border-slate-700'} flex items-center justify-center transition">
+                                    ${isSelected ? '<i class="ph-bold ph-check text-white text-xs"></i>' : ''}
+                                </div>
+                            ` : ''}
                         </div>
                     `;
                 }).join('');
                 
-                // Update small tag list
                 document.getElementById('selected-group-users').innerHTML = Chat.selectedUsers.map(u => `
-                    <span class="bg-primary text-[9px] font-bold px-2 py-0.5 rounded-full">${u}</span>
+                    <span class="bg-primary/20 text-primary text-[8px] font-black px-2 py-1 rounded-lg border border-primary/20 uppercase">${u}</span>
                 `).join('');
             },
 
@@ -583,20 +703,19 @@
             startConversation: (participants) => {
                 const allParticipants = [...new Set([Auth.currentUser.username, ...participants])].sort();
                 const chats = DB.getChats();
-                
                 let chat = chats.find(c => JSON.stringify(c.participants.sort()) === JSON.stringify(allParticipants));
                 
                 if (!chat) {
-                    chat = {
-                        id: 'chat_' + Date.now(),
-                        participants: allParticipants,
-                        messages: [],
-                        isGroup: allParticipants.length > 2
+                    chat = { 
+                        id: 'mesh_' + Date.now(), 
+                        participants: allParticipants, 
+                        messages: [], 
+                        isGroup: allParticipants.length > 2 
                     };
                     chats.push(chat);
                     DB.saveChats(chats);
                 }
-
+                
                 Chat.activeId = chat.id;
                 Chat.renderActiveWindow();
             },
@@ -604,27 +723,28 @@
             renderActiveWindow: () => {
                 const chat = DB.getChats().find(c => c.id === Chat.activeId);
                 if (!chat) return;
-
+                
                 document.getElementById('chat-empty-state').classList.add('hidden');
                 document.getElementById('chat-active-window').classList.remove('hidden');
-
+                
                 const others = chat.participants.filter(p => p !== Auth.currentUser.username);
-                document.getElementById('chat-target-name').innerText = chat.isGroup ? `Group: ${others.join(', ')}` : others[0];
-                document.getElementById('chat-target-avatar').innerText = chat.isGroup ? 'G' : others[0][0].toUpperCase();
-
+                document.getElementById('chat-target-name').innerText = chat.isGroup ? `Mesh Cluster (${others.length + 1})` : others[0];
+                document.getElementById('chat-target-avatar').innerText = chat.isGroup ? 'M' : others[0][0].toUpperCase();
+                
                 const container = document.getElementById('chat-messages-container');
                 container.innerHTML = chat.messages.map(m => {
                     const isMe = m.sender === Auth.currentUser.username;
                     return `
-                        <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
-                            <div class="max-w-[80%] p-3 rounded-2xl ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-slate-800 text-slate-200 rounded-tl-none'} shadow-md">
-                                ${chat.isGroup && !isMe ? `<div class="text-[9px] font-black uppercase opacity-60 mb-1">${m.sender}</div>` : ''}
-                                <p class="text-sm">${m.text}</p>
+                        <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} group">
+                            <div class="max-w-[75%] p-4 rounded-2xl ${isMe ? 'bg-primary text-white rounded-tr-none shadow-lg shadow-primary/10' : 'bg-slate-800 text-slate-200 rounded-tl-none'} transition">
+                                ${chat.isGroup && !isMe ? `<div class="text-[8px] font-black uppercase opacity-50 mb-1 tracking-widest">${m.sender}</div>` : ''}
+                                <p class="text-sm font-medium leading-relaxed">${m.text}</p>
                             </div>
-                            <span class="text-[9px] text-slate-600 mt-1">${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            <span class="text-[8px] text-slate-600 mt-2 font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition">${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                         </div>
                     `;
                 }).join('');
+                
                 container.scrollTop = container.scrollHeight;
             },
 
@@ -632,14 +752,15 @@
                 const input = document.getElementById('chat-input');
                 const text = input.value.trim();
                 if (!text || !Chat.activeId) return;
-
+                
                 const chats = DB.getChats();
                 const chat = chats.find(c => c.id === Chat.activeId);
-                chat.messages.push({
-                    sender: Auth.currentUser.username,
-                    text: text,
-                    time: Date.now()
+                chat.messages.push({ 
+                    sender: Auth.currentUser.username, 
+                    text: text, 
+                    time: Date.now() 
                 });
+                
                 DB.saveChats(chats);
                 input.value = '';
                 Chat.renderActiveWindow();
@@ -653,81 +774,56 @@
                 const users = DB.getUsers();
                 const posts = DB.getPosts();
                 
-                document.getElementById('admin-total-users').innerText = `${users.length} Total`;
+                document.getElementById('admin-total-users').innerText = users.length;
                 document.getElementById('admin-stat-posts').innerText = posts.length;
                 
-                // Render Pending
                 const pending = users.filter(u => !u.isApproved);
+                document.getElementById('pending-count').innerText = pending.length;
+                
                 const pendingList = document.getElementById('admin-approvals-list');
-                if(pending.length === 0) {
-                    pendingList.innerHTML = `<p class="text-slate-500 text-sm italic">No pending accounts.</p>`;
-                } else {
-                    pendingList.innerHTML = pending.map(u => `
-                        <div class="flex items-center justify-between p-3 bg-slate-900 rounded-xl border border-slate-800">
-                            <div>
-                                <span class="font-bold text-white">${u.username}</span>
-                                <span class="text-[10px] block text-slate-500">Requested ${new Date(u.joined).toLocaleDateString()}</span>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="Admin.approveUser('${u.username}')" class="bg-green-500/20 text-green-500 px-3 py-1 rounded-lg text-xs font-bold hover:bg-green-500 hover:text-white transition">Approve</button>
-                                <button onclick="Admin.deleteUser('${u.username}')" class="bg-danger/20 text-danger px-3 py-1 rounded-lg text-xs font-bold hover:bg-danger hover:text-white transition">Deny</button>
-                            </div>
+                pendingList.innerHTML = pending.length === 0 ? `<p class="text-slate-600 text-[10px] italic font-bold uppercase text-center py-6 tracking-widest">Registry Clean</p>` : pending.map(u => `
+                    <div class="flex items-center justify-between p-4 bg-slate-900 rounded-2xl border border-slate-800 animate-slide">
+                        <div>
+                            <span class="font-black text-white text-xs uppercase italic">${u.username}</span>
+                            <span class="text-[8px] block text-slate-600 font-bold uppercase tracking-widest">Entry: ${new Date(u.joined).toLocaleDateString()}</span>
                         </div>
-                    `).join('');
-                }
+                        <div class="flex gap-2">
+                            <button onclick="Admin.approveUser('${u.username}')" class="bg-success text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase hover:scale-105 transition">Approve</button>
+                            <button onclick="Admin.deleteUser('${u.username}')" class="bg-danger/20 text-danger border border-danger/30 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase hover:bg-danger hover:text-white transition">Deny</button>
+                        </div>
+                    </div>
+                `).join('');
 
-                // Render User List
                 const list = document.getElementById('admin-user-list');
-                list.innerHTML = users.map(u => {
-                    let banText = "";
-                    if (u.isBanned) {
-                        if (u.banExpires === 'PERM') banText = "(Permanently Banned)";
-                        else {
-                            const diff = u.banExpires - Date.now();
-                            if (diff <= 0) banText = "(Ban Expired - Refreshing...)";
-                            else banText = `(Banned - ${Math.ceil(diff / (1000 * 60 * 60))}h left)`;
-                        }
-                    }
-
-                    return `
-                    <div class="p-4 flex items-center justify-between hover:bg-slate-800/30 transition">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-slate-700 flex items-center justify-center font-bold">${u.username[0].toUpperCase()}</div>
+                list.innerHTML = users.map(u => `
+                    <div class="p-5 flex items-center justify-between hover:bg-slate-800/20 transition group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center font-black text-lg group-hover:bg-primary/20 transition">${u.username[0].toUpperCase()}</div>
                             <div>
-                                <div class="font-bold flex items-center gap-2">
+                                <div class="font-black flex items-center gap-2 uppercase tracking-tight italic">
                                     ${u.username} 
-                                    ${u.isAdmin ? '<span class="text-[9px] bg-primary/20 text-primary px-1 rounded uppercase">Admin</span>' : ''}
-                                    ${u.isBanned ? '<span class="text-[9px] bg-danger/20 text-danger px-1 rounded uppercase">Suspended</span>' : ''}
-                                    ${!u.isApproved ? '<span class="text-[9px] bg-yellow-500/20 text-yellow-500 px-1 rounded uppercase">Pending</span>' : ''}
+                                    ${u.isAdmin ? '<span class="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded uppercase font-black">Root</span>' : ''}
+                                    ${u.isBanned ? '<span class="text-[8px] bg-danger text-white px-1.5 py-0.5 rounded uppercase font-black">Purged</span>' : ''}
                                 </div>
-                                <div class="text-[10px] text-slate-500">${u.followers.length} Followers • Joined ${new Date(u.joined).toLocaleDateString()}</div>
-                                <div class="text-[9px] text-danger font-bold mt-1">${banText}</div>
+                                <div class="text-[9px] text-slate-600 font-bold uppercase tracking-widest">${u.followers.length} Peers // ${new Date(u.joined).toLocaleDateString()}</div>
                             </div>
                         </div>
                         <div class="flex gap-2 items-center">
-                            ${!u.isAdmin ? `
-                                ${u.isBanned ? `
-                                    <button onclick="Admin.unbanUser('${u.username}')" class="bg-green-500/20 text-green-500 px-4 py-1 rounded-lg text-xs font-bold">
-                                        Unban
-                                    </button>
-                                ` : `
-                                    <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700">
-                                        <select id="ban-time-${u.username}" class="bg-transparent border-none text-[10px] text-slate-300 focus:ring-0">
-                                            <option value="3600000">1 Hour</option>
-                                            <option value="43200000">12 Hours</option>
-                                            <option value="86400000">1 Day</option>
-                                            <option value="604800000">1 Week</option>
-                                            <option value="PERM">Permanent</option>
-                                        </select>
-                                        <button onclick="Admin.applyBan('${u.username}', 'ban-time-${u.username}')" class="bg-danger/20 text-danger px-2 py-1 rounded-md text-[10px] font-bold hover:bg-danger hover:text-white transition">
-                                            Ban
-                                        </button>
-                                    </div>
-                                `}
-                            ` : ''}
+                            ${!u.isAdmin ? (u.isBanned ? `
+                                <button onclick="Admin.unbanUser('${u.username}')" class="bg-success/20 text-success border border-success/30 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-success hover:text-white transition">Restore</button>
+                            ` : `
+                                <div class="flex items-center gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+                                    <select id="ban-time-${u.username}" class="bg-transparent border-none text-[9px] text-slate-500 font-black uppercase focus:ring-0 cursor-pointer">
+                                        <option value="3600000">1 Hour</option>
+                                        <option value="86400000">1 Day</option>
+                                        <option value="PERM">Permanent</option>
+                                    </select>
+                                    <button onclick="Admin.applyBan('${u.username}', 'ban-time-${u.username}')" class="bg-danger/20 text-danger px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-danger hover:text-white transition">Purge</button>
+                                </div>
+                            `) : ''}
                         </div>
                     </div>
-                `}).join('');
+                `).join('');
             },
 
             approveUser: (username) => {
@@ -736,6 +832,7 @@
                 if(user) user.isApproved = true;
                 DB.saveUsers(users);
                 Admin.init();
+                UI.notify(`Node ${username} Approved`, "success");
             },
 
             applyBan: (username, selectId) => {
@@ -747,29 +844,14 @@
                     user.isBanned = true;
                     user.banExpires = duration === 'PERM' ? 'PERM' : Date.now() + parseInt(duration);
                     
-                    // Clear their data
-                    user.bio = "This entity has been purged.";
-                    user.followers = [];
-                    user.following = [];
-                    
-                    // Clear their posts
+                    // Clear user content from grid for safety
                     let posts = DB.getPosts();
                     posts = posts.filter(p => p.author !== username);
                     DB.savePosts(posts);
-
-                    // Clear chats related to banned person
-                    let chats = DB.getChats();
-                    chats = chats.filter(c => !c.participants.includes(username));
-                    DB.saveChats(chats);
                     
                     DB.saveUsers(users);
-                    
-                    // If we are on the profile view, refresh it
-                    if (!document.getElementById('view-profile').classList.contains('hidden')) {
-                        UI.showProfile(username);
-                    } else {
-                        Admin.init();
-                    }
+                    Admin.init();
+                    UI.notify(`Node ${username} Purged from Grid`, "danger");
                 }
             },
 
@@ -780,11 +862,8 @@
                     user.isBanned = false;
                     user.banExpires = null;
                     DB.saveUsers(users);
-                    if (!document.getElementById('view-profile').classList.contains('hidden')) {
-                        UI.showProfile(username);
-                    } else {
-                        Admin.init();
-                    }
+                    Admin.init();
+                    UI.notify(`Node ${username} Restored`, "success");
                 }
             },
 
@@ -793,127 +872,166 @@
                 users = users.filter(u => u.username !== username);
                 DB.saveUsers(users);
                 Admin.init();
+                UI.notify(`Access Denied for ${username}`, "danger");
             },
 
             wipeAllData: () => {
-                if(confirm("DANGER: This will delete everything except this Admin user. Proceed?")) {
-                    const users = DB.getUsers();
-                    const admin = users.find(u => u.isAdmin);
+                if(confirm("ACTIVATE NUCLEAR PROTOCOL? THIS CANNOT BE UNDONE.")) {
+                    const admin = DB.getUsers().find(u => u.isAdmin);
                     DB.saveUsers([admin]);
                     DB.savePosts([]);
                     DB.saveChats([]);
                     Admin.init();
+                    UI.notify("GRID PURGED. ONLY ROOT REMAINS.", "danger");
                 }
+            },
+
+            startUptimeClock: () => {
+                let seconds = 0;
+                setInterval(() => {
+                    seconds++;
+                    const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+                    const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+                    const s = (seconds % 60).toString().padStart(2, '0');
+                    const clock = document.getElementById('server-uptime');
+                    if (clock) clock.innerText = `UPTIME: ${h}:${m}:${s}`;
+                }, 1000);
             }
         };
 
         // --- UI UTILS ---
         const UI = {
+            notify: (msg, type = 'primary', duration = 4000) => {
+                const container = document.getElementById('notification-container');
+                const toast = document.createElement('div');
+                toast.className = `notification-toast flex items-center gap-4 p-5 rounded-[1.5rem] border shadow-2xl ${
+                    type === 'danger' ? 'bg-danger/20 border-danger/30 text-danger' : 
+                    type === 'success' ? 'bg-success/20 border-success/30 text-success' : 
+                    'bg-primary/20 border-primary/30 text-primary'
+                }`;
+                
+                toast.innerHTML = `
+                    <i class="ph-bold ${type === 'danger' ? 'ph-warning-circle' : type === 'success' ? 'ph-check-circle' : 'ph-info'} text-xl"></i>
+                    <p class="text-xs font-black uppercase tracking-tight italic flex-1">${msg}</p>
+                `;
+                
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(20px)';
+                    toast.style.transition = 'all 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            },
+
             switchView: (view) => {
                 document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
                 document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
                 
                 document.getElementById(`view-${view}`).classList.remove('hidden');
                 
-                // Highlight button
-                const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.innerText.toLowerCase().includes(view.toLowerCase()));
-                if (btn) btn.classList.add('active');
-
-                const titles = { feed: 'Home Feed', messages: 'Chat Directory', seameed: 'Seameed', admin: 'Admin Control', profile: 'User Profile' };
+                const titles = { 
+                    feed: 'Home Feed', 
+                    messages: 'Ciphers', 
+                    seameed: 'Waves', 
+                    admin: 'Overwatch', 
+                    profile: 'Identity node' 
+                };
                 document.getElementById('page-title').innerText = titles[view] || 'The Network';
                 
                 if (view === 'admin') Admin.init();
                 if (view === 'feed') App.renderFeed();
+                
+                const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.innerText.toLowerCase().includes(view.toLowerCase()));
+                if (btn) btn.classList.add('active');
             },
 
             showProfile: (username) => {
                 UI.switchView('profile');
-                const users = DB.getUsers();
-                const user = users.find(u => u.username === username);
+                const user = DB.getUsers().find(u => u.username === username);
                 if (!user) return;
-
+                
                 document.getElementById('profile-avatar').innerText = user.username[0].toUpperCase();
                 document.getElementById('profile-username').innerText = user.username;
-                document.getElementById('profile-handle').innerText = `@${user.username.toLowerCase()}`;
+                document.getElementById('profile-handle').innerText = `@${user.username.toLowerCase()}.node`;
+                document.getElementById('profile-bio').innerText = user.bio || "No system log provided.";
+                document.getElementById('count-followers').innerText = user.followers.length;
+                document.getElementById('count-following').innerText = user.following.length;
+                
+                const badge = document.getElementById('profile-badge');
+                if (user.isAdmin) badge.classList.remove('hidden'); else badge.classList.add('hidden');
                 
                 const actions = document.getElementById('profile-actions');
                 let buttonsHtml = '';
-
+                
                 if (username === Auth.currentUser.username) {
-                    buttonsHtml = `<button class="bg-slate-800 text-white font-bold px-6 py-2 rounded-xl border border-slate-700">Edit Profile</button>`;
+                    buttonsHtml = `<button class="bg-slate-800 text-white font-black uppercase tracking-widest text-[10px] px-8 py-3 rounded-2xl border border-slate-700 hover:border-primary transition">Configure Identity</button>`;
                 } else {
                     const isFollowing = Auth.currentUser.following.includes(username);
                     buttonsHtml = `
-                        <div class="flex gap-2">
-                            <button onclick="Chat.startConversation(['${username}']); UI.switchView('messages')" class="bg-slate-800 text-white font-bold px-4 py-2 rounded-xl border border-slate-700">Message</button>
-                            <button onclick="App.followUser('${username}')" class="${isFollowing ? 'bg-slate-700 text-slate-400' : 'bg-primary text-white'} font-bold px-6 py-2 rounded-xl shadow-lg transition">${isFollowing ? 'Following' : 'Follow'}</button>
+                        <div class="flex gap-3">
+                            <button onclick="Chat.startConversation(['${username}']); UI.switchView('messages')" class="bg-slate-800 text-white font-black uppercase tracking-widest text-[10px] px-6 py-3 rounded-2xl border border-slate-700 hover:border-primary transition italic">Cipher</button>
+                            <button onclick="App.followUser('${username}')" class="${isFollowing ? 'bg-slate-700 text-slate-400' : 'bg-primary text-white shadow-lg shadow-primary/20'} font-black uppercase tracking-widest text-[10px] px-8 py-3 rounded-2xl transition">
+                                ${isFollowing ? 'Linked' : 'Link Node'}
+                            </button>
                         </div>
                     `;
-
-                    // ADD ADMIN BAN TOOLS TO PROFILE
-                    if (Auth.currentUser.isAdmin && !user.isAdmin) {
-                        if (user.isBanned) {
-                            buttonsHtml += `
-                                <div class="mt-2 p-2 bg-danger/10 border border-danger/20 rounded-xl text-center">
-                                    <p class="text-[10px] text-danger font-bold uppercase mb-1">Entity Suspended</p>
-                                    <button onclick="Admin.unbanUser('${username}')" class="bg-green-500 text-white text-xs font-bold px-4 py-1 rounded-lg">Unban User</button>
-                                </div>
-                            `;
-                        } else {
-                            buttonsHtml += `
-                                <div class="mt-2 flex items-center gap-1 bg-danger/10 p-2 rounded-xl border border-danger/20">
-                                    <select id="profile-ban-time" class="bg-transparent border-none text-[10px] text-danger font-bold focus:ring-0">
-                                        <option value="3600000">1 Hour</option>
-                                        <option value="43200000">12 Hours</option>
-                                        <option value="86400000">1 Day</option>
-                                        <option value="604800000">1 Week</option>
-                                        <option value="PERM">Permanent</option>
-                                    </select>
-                                    <button onclick="Admin.applyBan('${username}', 'profile-ban-time')" class="bg-danger text-white px-3 py-1 rounded-lg text-xs font-bold">Ban User</button>
-                                </div>
-                            `;
-                        }
-                    }
                 }
-
+                
                 actions.innerHTML = buttonsHtml;
-
                 const posts = DB.getPosts().filter(p => p.author === username);
-                document.getElementById('profile-posts').innerHTML = posts.length > 0 ? posts.map(p => UI.postTemplate(p)).join('') : `<div class="p-12 text-center text-slate-500">No transmissions yet.</div>`;
+                document.getElementById('profile-posts').innerHTML = posts.length > 0 ? posts.map(p => UI.postTemplate(p)).join('') : `<div class="p-20 text-center font-black text-slate-700 uppercase tracking-widest italic opacity-40">No signals found for this node</div>`;
             },
 
             toggleProfileTab: (tab) => {
-                const t1 = document.getElementById('tab-posts'); const t2 = document.getElementById('tab-seameed');
-                if(tab === 'posts') { t1.className = "pb-3 text-white font-bold border-b-2 border-primary transition"; t2.className = "pb-3 text-slate-500 font-bold border-b-2 border-transparent hover:text-white transition"; }
-                else { t1.className = "pb-3 text-slate-500 font-bold border-b-2 border-transparent hover:text-white transition"; t2.className = "pb-3 text-pink-500 font-bold border-b-2 border-pink-500 transition"; }
+                const t1 = document.getElementById('tab-posts'), t2 = document.getElementById('tab-seameed');
+                if(tab === 'posts') {
+                    t1.className = "pb-4 text-white font-black uppercase tracking-widest text-xs border-b-2 border-primary transition";
+                    t2.className = "pb-4 text-slate-500 font-black uppercase tracking-widest text-xs border-b-2 border-transparent hover:text-white transition italic";
+                } else {
+                    t1.className = "pb-4 text-slate-500 font-black uppercase tracking-widest text-xs border-b-2 border-transparent hover:text-white transition italic";
+                    t2.className = "pb-4 text-pink-500 font-black uppercase tracking-widest text-xs border-b-2 border-pink-500 transition";
+                }
             },
 
-            toggleSearch: (show) => { const panel = document.getElementById('search-panel'); if(show) { panel.classList.remove('-translate-y-full'); document.getElementById('search-input').focus(); } else panel.classList.add('-translate-y-full'); },
+            toggleSearch: (show) => {
+                const panel = document.getElementById('search-panel');
+                if(show) {
+                    panel.classList.remove('-translate-y-full');
+                    document.getElementById('search-input').focus();
+                } else {
+                    panel.classList.add('-translate-y-full');
+                }
+            },
 
             postTemplate: (p) => {
                 const isLiked = p.likes.includes(Auth.currentUser.username);
-                const timeStr = new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 return `
-                    <div class="bg-card p-6 rounded-3xl border border-slate-700/50 shadow-lg animate-fade">
-                        <div class="flex items-start gap-4">
-                            <div onclick="UI.showProfile('${p.author}')" class="w-12 h-12 rounded-2xl bg-slate-800 flex-shrink-0 flex items-center justify-center font-bold text-lg cursor-pointer hover:bg-primary transition">${p.author[0].toUpperCase()}</div>
-                            <div class="flex-1 overflow-hidden">
-                                <div class="flex items-center justify-between">
-                                    <h4 onclick="UI.showProfile('${p.author}')" class="font-bold hover:text-primary cursor-pointer transition">${p.author}</h4>
-                                    <span class="text-xs text-slate-500">${timeStr}</span>
+                    <div class="bg-card p-10 rounded-[2.5rem] border border-slate-700/50 shadow-2xl shadow-black/20 animate-slide group">
+                        <div class="flex items-start gap-8">
+                            <div onclick="UI.showProfile('${p.author}')" class="w-16 h-16 rounded-[1.5rem] bg-slate-800 flex-shrink-0 flex items-center justify-center font-black text-2xl cursor-pointer group-hover:bg-primary transition shadow-xl">
+                                ${p.author[0].toUpperCase()}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-2">
+                                        <h4 onclick="UI.showProfile('${p.author}')" class="font-black text-lg hover:text-primary cursor-pointer transition uppercase tracking-tighter italic">${p.author}</h4>
+                                        <span class="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em] px-2 py-0.5 border border-slate-800 rounded">Verified</span>
+                                    </div>
+                                    <span class="text-[9px] text-slate-600 font-bold uppercase tracking-widest">${new Date(p.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                                 </div>
-                                <p class="text-slate-300 mt-2 leading-relaxed whitespace-pre-wrap">${p.content}</p>
-                                <div class="flex items-center gap-6 mt-6 pt-4 border-t border-slate-800/30">
-                                    <button onclick="App.likePost('${p.id}')" class="flex items-center gap-2 ${isLiked ? 'text-danger' : 'text-slate-500'} hover:text-danger transition">
-                                        <i class="ph-fill ${isLiked ? 'ph-heart' : 'ph-heart'} text-xl"></i>
-                                        <span class="text-xs font-bold">${p.likes.length}</span>
+                                <p class="text-slate-300 text-lg leading-relaxed whitespace-pre-wrap font-medium tracking-tight">${p.content}</p>
+                                <div class="flex items-center gap-10 mt-10 pt-6 border-t border-slate-800/50">
+                                    <button onclick="App.likePost('${p.id}')" class="flex items-center gap-3 ${isLiked ? 'text-danger' : 'text-slate-500'} hover:text-danger transition">
+                                        <i class="${isLiked ? 'ph-fill' : 'ph-bold'} ph-heart text-2xl"></i>
+                                        <span class="text-xs font-black tracking-widest">${p.likes.length}</span>
                                     </button>
-                                    <button class="flex items-center gap-2 text-slate-500 hover:text-primary transition">
-                                        <i class="ph ph-chat-circle text-xl"></i>
-                                        <span class="text-xs font-bold">${p.comments.length}</span>
+                                    <button class="flex items-center gap-3 text-slate-500 hover:text-primary transition">
+                                        <i class="ph-bold ph-chat-circle text-2xl"></i>
+                                        <span class="text-xs font-black tracking-widest">${p.comments.length}</span>
                                     </button>
-                                    <button class="flex items-center gap-2 text-slate-500 hover:text-green-500 transition ml-auto">
-                                        <i class="ph ph-share-network text-xl"></i>
+                                    <button class="flex items-center gap-3 text-slate-500 hover:text-white transition ml-auto">
+                                        <i class="ph-bold ph-share-network text-2xl"></i>
                                     </button>
                                 </div>
                             </div>
@@ -923,10 +1041,8 @@
             }
         };
 
-        // Initialize state on load
-        window.onload = () => {
-            // Keep app alive
-        };
+        // Start Clock
+        Admin.startUptimeClock();
     </script>
 </body>
 </html>
