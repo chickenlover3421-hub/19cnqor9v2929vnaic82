@@ -43,8 +43,8 @@
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .notification-toast { animation: slideInRight 0.3s ease-out forwards; }
         @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        .video-card:hover iframe { transform: scale(1.05); }
-        iframe { transition: transform 0.3s ease; }
+        .video-card:hover iframe, .video-card:hover video { transform: scale(1.05); }
+        iframe, video { transition: transform 0.3s ease; }
     </style>
 </head>
 <body class="overflow-x-hidden">
@@ -88,7 +88,7 @@
                     </button>
                 </div>
             </div>
-            <p class="text-center mt-8 text-[10px] text-slate-600">v6.0.0 // Groups Update</p>
+            <p class="text-center mt-8 text-[10px] text-slate-600">v7.0.0 // User Media Update</p>
         </div>
     </div>
 
@@ -173,10 +173,15 @@
                         <div class="bg-card p-6 rounded-[2rem] border border-slate-700/50 shadow-xl">
                             <div class="flex gap-4">
                                 <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 flex-shrink-0 flex items-center justify-center font-bold text-white text-xl"><i class="ph-fill ph-pencil-simple"></i></div>
-                                <div class="flex-1"><textarea id="post-input" placeholder="What's on your mind?" class="w-full bg-transparent border-none focus:ring-0 text-lg resize-none mt-2 h-20 placeholder-slate-600" maxlength="280"></textarea></div>
+                                <div class="flex-1">
+                                    <textarea id="post-input" placeholder="What's on your mind?" class="w-full bg-transparent border-none focus:ring-0 text-lg resize-none mt-2 h-20 placeholder-slate-600" maxlength="280"></textarea>
+                                    <input type="text" id="post-media-input" placeholder="Paste video/image link here (optional)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 mt-2 text-xs text-white">
+                                </div>
                             </div>
                             <div class="flex justify-between items-center mt-4 pt-4 border-t border-slate-800/50">
-                                <div class="flex gap-2"><button class="p-2 text-slate-400 hover:text-primary rounded-xl"><i class="ph ph-image text-xl"></i></button></div>
+                                <div class="flex gap-2">
+                                    <button class="p-2 text-slate-400 hover:text-primary rounded-xl" title="Paste link in box above"><i class="ph ph-link text-xl"></i></button>
+                                </div>
                                 <button onclick="App.createPost()" class="bg-primary hover:bg-primaryDark text-white px-6 py-2 rounded-xl font-bold shadow-lg transition active:scale-95 text-sm">Post</button>
                             </div>
                         </div>
@@ -341,10 +346,10 @@
                     </div>
                 </div>
 
-                <!-- VIEW: SEAMEED -->
+                <!-- VIEW: SEAMEED (User Generated) -->
                 <div id="view-seameed" class="view-section hidden p-8 animate-slide">
                     <div class="max-w-7xl mx-auto space-y-8">
-                        <div class="text-center mb-10"><h2 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500 tracking-tight">Seameed</h2></div>
+                        <div class="text-center mb-10"><h2 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500 tracking-tight">Seameed</h2><p class="text-slate-500 font-bold mt-2">Community Clips</p></div>
                         <div id="seameed-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
                     </div>
                 </div>
@@ -451,7 +456,10 @@
                 document.getElementById('app-screen').classList.remove('hidden');
                 document.getElementById('sidebar-username').innerText = Auth.currentUser.username;
                 document.getElementById('sidebar-avatar').innerText = Auth.currentUser.username[0].toUpperCase();
-                if (Auth.currentUser.isAdmin) document.getElementById('admin-nav-section').classList.remove('hidden');
+                if (Auth.currentUser.isAdmin) {
+                    document.getElementById('admin-nav-section').classList.remove('hidden');
+                    Admin.init(); // Ensure admin panel refreshes on login
+                }
                 UI.switchView('feed');
                 UI.notify(`Welcome, ${Auth.currentUser.username}`, "success");
                 App.startSimulation();
@@ -468,22 +476,24 @@
                 const botNames = ['Bot1', 'NewsFeed', 'DailyDose', 'Clipz', 'MusicLover'];
                 const phrases = ["Check out this video!", "Anyone online?", "Groups are cool.", "Just posted a new clip.", "Hello Network!"];
                 App.simInterval = setInterval(() => {
-                    if(Math.random() > 0.7) {
+                    if(Math.random() > 0.8) {
                         const posts = DB.getPosts();
                         posts.unshift({ id: 'bot_' + Date.now(), author: botNames[Math.floor(Math.random()*botNames.length)], content: phrases[Math.floor(Math.random()*phrases.length)], timestamp: Date.now(), likes: [], comments: [] });
                         if(posts.length > 50) posts.pop();
                         DB.savePosts(posts);
                         if(!document.getElementById('view-feed').classList.contains('hidden')) App.renderFeed();
                     }
-                }, 8000); 
+                }, 10000); 
             },
             createPost: () => {
                 const text = document.getElementById('post-input').value.trim();
-                if (!text) return;
+                const media = document.getElementById('post-media-input').value.trim();
+                if (!text && !media) return;
                 const posts = DB.getPosts();
-                posts.unshift({ id: 'tx_' + Date.now(), author: Auth.currentUser.username, content: text, timestamp: Date.now(), likes: [], comments: [] });
+                posts.unshift({ id: 'tx_' + Date.now(), author: Auth.currentUser.username, content: text, media: media, timestamp: Date.now(), likes: [], comments: [] });
                 DB.savePosts(posts);
                 document.getElementById('post-input').value = '';
+                document.getElementById('post-media-input').value = '';
                 UI.notify("Posted", "success");
                 App.renderFeed();
             },
@@ -494,10 +504,43 @@
                 const visible = posts.filter(p => { const u = users.find(x => x.username === p.author); return !u || !u.isBanned; });
                 container.innerHTML = visible.length ? visible.map(p => UI.postTemplate(p)).join('') : `<div class="p-10 text-center opacity-50">No posts</div>`;
             },
+            // SEAMEED UPDATED: Only user content
             renderSeameeds: () => {
-                const ids = ['p7YXXieghto', 'S9IGj4dJdCg', '5qap5aO4i9A', 'tG7wLK4aAOE', 'L_jWHffIx5E', 'y7e-GC6oGhg'];
-                const list = [...ids, ...ids];
-                document.getElementById('seameed-grid').innerHTML = list.sort(()=>0.5-Math.random()).map(id => `<div class="video-card bg-slate-900 rounded-[2rem] overflow-hidden aspect-[9/16] shadow-xl relative"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${id}?controls=0&mute=1&loop=1" frameborder="0" allowfullscreen></iframe></div>`).join('');
+                const posts = DB.getPosts();
+                const users = DB.getUsers();
+                const mediaPosts = posts.filter(p => {
+                    const u = users.find(x => x.username === p.author);
+                    // Filter: User not banned AND post has media link
+                    return (!u || !u.isBanned) && p.media && (p.media.includes('youtube') || p.media.includes('youtu.be') || p.media.endsWith('.mp4'));
+                });
+
+                if (mediaPosts.length === 0) {
+                    document.getElementById('seameed-grid').innerHTML = `<div class="col-span-full text-center text-slate-500 py-10">No videos yet. Post a link in the Home Feed to see it here!</div>`;
+                    return;
+                }
+
+                document.getElementById('seameed-grid').innerHTML = mediaPosts.map(p => {
+                    let content = '';
+                    if (p.media.includes('youtube') || p.media.includes('youtu.be')) {
+                        let vidId = '';
+                        if (p.media.includes('v=')) vidId = p.media.split('v=')[1].split('&')[0];
+                        else if (p.media.includes('youtu.be/')) vidId = p.media.split('youtu.be/')[1].split('?')[0];
+                        content = `<iframe class="w-full h-full" src="https://www.youtube.com/embed/${vidId}" frameborder="0" allowfullscreen></iframe>`;
+                    } else {
+                        content = `<video src="${p.media}" controls class="w-full h-full bg-black object-cover"></video>`;
+                    }
+                    return `
+                        <div class="video-card bg-slate-900 rounded-[2rem] overflow-hidden aspect-[9/16] shadow-xl relative group">
+                            ${content}
+                            <div class="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/90 to-transparent">
+                                <div class="flex items-center gap-2 mb-1 cursor-pointer" onclick="UI.showProfile('${p.author}')">
+                                    <div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-white">${p.author[0]}</div>
+                                    <span class="text-white text-xs font-bold">${p.author}</span>
+                                </div>
+                                <p class="text-slate-300 text-[10px] line-clamp-2">${p.content}</p>
+                            </div>
+                        </div>`;
+                }).join('');
             },
             likePost: (id) => {
                 const posts = DB.getPosts(); const p = posts.find(x => x.id === id);
@@ -552,7 +595,6 @@
 
             showJoinModal: () => {
                 const groups = DB.getGroups();
-                // Simple prompt for now, could be a modal
                 const allNames = groups.map(g => `${g.name} (${g.isPrivate ? 'Private' : 'Public'})`).join('\n');
                 const nameToJoin = prompt(`Enter exact name of group to join:\n\n${allNames}`);
                 if (!nameToJoin) return;
@@ -592,11 +634,10 @@
                 document.getElementById('group-channels-pane').classList.add('flex');
                 document.getElementById('active-group-name').innerText = group.name;
                 
-                // Select first channel by default
                 Group.activeChannelName = group.channels[0].name;
                 Group.renderChannels();
                 Group.renderChat();
-                Group.renderMyGroups(); // Re-render to highlight active
+                Group.renderMyGroups(); 
             },
 
             renderChannels: () => {
@@ -702,11 +743,24 @@
         // --- ADMIN LOGIC ---
         const Admin = {
             init: () => {
-                if (!Auth.currentUser.isAdmin) return;
+                if (!Auth.currentUser || !Auth.currentUser.isAdmin) return;
                 const users = DB.getUsers(); const posts = DB.getPosts(); const groups = DB.getGroups();
-                document.getElementById('pending-count').innerText = users.filter(u=>!u.isApproved).length;
-                document.getElementById('admin-approvals-list').innerHTML = users.filter(u=>!u.isApproved).map(u => `<div class="flex justify-between p-3 bg-slate-900 rounded border border-slate-800"><span>${u.username}</span><div><button onclick="Admin.approveUser('${u.username}')" class="text-green-500 mr-2">Approve</button><button onclick="Admin.deleteUser('${u.username}')" class="text-red-500">Deny</button></div></div>`).join('');
-                document.getElementById('admin-user-list').innerHTML = users.map(u => `<div class="p-3 flex justify-between"><span>${u.username} ${u.isAdmin?'(Admin)':''} ${u.isBanned?'(Banned)':''}</span>${!u.isAdmin ? `<button onclick="Admin.toggleBan('${u.username}')" class="text-xs text-red-400">${u.isBanned?'Unban':'Ban'}</button>` : ''}</div>`).join('');
+                
+                const pendingUsers = users.filter(u=>!u.isApproved);
+                document.getElementById('pending-count').innerText = pendingUsers.length;
+                
+                const pendingHtml = pendingUsers.length ? pendingUsers.map(u => `
+                    <div class="flex justify-between items-center p-3 bg-slate-900 rounded border border-slate-800">
+                        <span class="text-white font-bold">${u.username}</span>
+                        <div>
+                            <button onclick="Admin.approveUser('${u.username}')" class="text-xs bg-green-900 text-green-400 px-2 py-1 rounded mr-2 hover:bg-green-800 transition">Approve</button>
+                            <button onclick="Admin.deleteUser('${u.username}')" class="text-xs bg-red-900 text-red-400 px-2 py-1 rounded hover:bg-red-800 transition">Deny</button>
+                        </div>
+                    </div>`).join('') : '<div class="text-slate-500 text-xs text-center">No pending requests</div>';
+                
+                document.getElementById('admin-approvals-list').innerHTML = pendingHtml;
+                
+                document.getElementById('admin-user-list').innerHTML = users.map(u => `<div class="p-3 flex justify-between"><span>${u.username} ${u.isAdmin?'(Admin)':''} ${u.isBanned?'(Banned)':''}</span>${!u.isAdmin ? `<button onclick="Admin.toggleBan('${u.username}')" class="text-xs text-red-400 border border-red-900 px-2 py-1 rounded hover:bg-red-900/20">${u.isBanned?'Unban':'Ban'}</button>` : ''}</div>`).join('');
                 
                 // Group Management
                 document.getElementById('admin-groups-list').innerHTML = groups.map(g => `
@@ -715,11 +769,20 @@
                             <span class="font-bold text-white text-sm">${g.name}</span>
                             <span class="text-[10px] text-slate-500 ml-2">${g.isPrivate ? `Private (Code: ${g.code})` : 'Public'}</span>
                         </div>
-                        <button onclick="Group.deleteGroup('${g.id}')" class="text-red-500 text-xs font-bold">Delete</button>
+                        <button onclick="Group.deleteGroup('${g.id}')" class="text-red-500 text-xs font-bold border border-red-900 px-2 py-1 rounded hover:bg-red-900/20">Delete</button>
                     </div>
                 `).join('');
             },
-            approveUser: (u) => { const users = DB.getUsers(); users.find(x=>x.username===u).isApproved=true; DB.saveUsers(users); Admin.init(); },
+            approveUser: (u) => { 
+                const users = DB.getUsers(); 
+                const user = users.find(x=>x.username===u);
+                if(user) {
+                    user.isApproved=true; 
+                    DB.saveUsers(users); 
+                    Admin.init(); 
+                    UI.notify(`Approved ${u}`, "success");
+                }
+            },
             toggleBan: (u) => { const users = DB.getUsers(); const user = users.find(x=>x.username===u); user.isBanned = !user.isBanned; user.banExpires = user.isBanned ? 'PERM' : null; DB.saveUsers(users); Admin.init(); },
             deleteUser: (u) => { const users = DB.getUsers().filter(x=>x.username!==u); DB.saveUsers(users); Admin.init(); },
             wipeAllData: () => { if(confirm("NUKE EVERYTHING?")) { const admin=DB.getUsers().find(u=>u.isAdmin); DB.saveUsers([admin]); DB.savePosts([]); DB.saveChats([]); DB.saveGroups([]); Admin.init(); } }
@@ -727,7 +790,7 @@
 
         // --- UI UTILS ---
         const UI = {
-            notify: (msg, type) => { const div = document.getElementById('notification-container'); div.innerHTML += `<div class="p-3 rounded bg-slate-800 border border-${type==='success'?'green':'red'}-500 text-white shadow-lg">${msg}</div>`; setTimeout(()=>div.innerHTML='', 3000); },
+            notify: (msg, type) => { const div = document.getElementById('notification-container'); div.innerHTML += `<div class="p-3 rounded bg-slate-800 border border-${type==='success'?'green':'red'}-500 text-white shadow-lg animate-slide">${msg}</div>`; setTimeout(()=>div.innerHTML='', 3000); },
             switchView: (view) => {
                 document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
                 document.getElementById(`view-${view}`).classList.remove('hidden');
@@ -738,7 +801,32 @@
             showProfile: (u) => { UI.switchView('profile'); document.getElementById('profile-username').innerText = u; const user = DB.getUsers().find(x=>x.username===u); document.getElementById('count-followers').innerText = user.followers.length; },
             toggleProfileTab: (t) => { document.getElementById('profile-posts').innerHTML = t==='posts' ? 'User posts...' : 'User media...'; },
             toggleSearch: (s) => { document.getElementById('search-panel').classList.toggle('-translate-y-full', !s); },
-            postTemplate: (p) => `<div class="bg-card p-6 rounded-2xl border border-slate-700/50 mb-4"><div class="flex gap-4"><div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white cursor-pointer" onclick="UI.showProfile('${p.author}')">${p.author[0]}</div><div><h4 class="font-bold text-white">${p.author}</h4><p class="text-slate-300 mt-1">${p.content}</p></div></div><div class="mt-4 flex gap-4"><button onclick="App.likePost('${p.id}')" class="text-slate-500 hover:text-pink-500"><i class="ph-bold ph-heart"></i> ${p.likes.length}</button></div></div>`
+            postTemplate: (p) => {
+                let mediaHtml = '';
+                if(p.media) {
+                    if(p.media.includes('youtube') || p.media.includes('youtu.be')) {
+                        let vidId = '';
+                        if (p.media.includes('v=')) vidId = p.media.split('v=')[1].split('&')[0];
+                        else if (p.media.includes('youtu.be/')) vidId = p.media.split('youtu.be/')[1].split('?')[0];
+                        mediaHtml = `<div class="aspect-video mt-3 rounded-xl overflow-hidden"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${vidId}" frameborder="0" allowfullscreen></iframe></div>`;
+                    } else {
+                        mediaHtml = `<div class="mt-3 rounded-xl overflow-hidden"><img src="${p.media}" class="w-full h-auto" onerror="this.style.display='none'"></div>`;
+                    }
+                }
+                return `<div class="bg-card p-6 rounded-2xl border border-slate-700/50 mb-4 animate-slide">
+                    <div class="flex gap-4">
+                        <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white cursor-pointer shrink-0" onclick="UI.showProfile('${p.author}')">${p.author[0]}</div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-white">${p.author}</h4>
+                            <p class="text-slate-300 mt-1 whitespace-pre-wrap">${p.content}</p>
+                            ${mediaHtml}
+                        </div>
+                    </div>
+                    <div class="mt-4 flex gap-4 ml-14">
+                        <button onclick="App.likePost('${p.id}')" class="text-slate-500 hover:text-pink-500"><i class="ph-bold ph-heart"></i> ${p.likes.length}</button>
+                    </div>
+                </div>`
+            }
         };
     </script>
 </body>
